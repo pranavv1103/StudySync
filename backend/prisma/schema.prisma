@@ -1,0 +1,357 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkspaceType {
+  PARTNER
+  TEAM
+}
+
+enum WorkspaceRole {
+  OWNER
+  MEMBER
+}
+
+enum NotificationType {
+  SELF_PROGRESS_ALERT
+  PARTNER_PROGRESS_ALERT
+  SELF_COMPLETION_ALERT
+  PARTNER_COMPLETION_ALERT
+  STREAK_ALERT
+  MISSED_GOAL_ALERT
+  ON_TRACK_ALERT
+  TEAM_SUMMARY_ALERT
+}
+
+enum NotificationAudience {
+  SELF
+  PARTNER
+  TEAM
+}
+
+enum GoalUnit {
+  PROBLEMS
+  JOBS
+  TOPICS
+  HOURS
+  TASKS
+  VIDEOS
+  APPLICATIONS
+  SESSIONS
+  MINUTES
+  ITEMS
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+enum RecurrenceType {
+  NONE
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+model User {
+  id                String          @id @default(cuid())
+  name              String
+  email             String          @unique
+  password          String?
+  googleId          String?         @unique
+  timezone          String          @default("UTC")
+  avatarUrl         String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  memberships       Membership[]
+  dailyGoals        DailyGoal[]         // Keep for backward compat
+  dailyProgress     DailyProgress[]     // Keep for backward compat
+  notifications     Notification[]  @relation("NotificationRecipient")
+  triggeredAlerts   Notification[]  @relation("NotificationActor")
+  activityLogs      ActivityLog[]
+  streakSummaries   StreakSummary[]
+  partnerRelationsA PartnerRelation[] @relation("PartnerA")
+  partnerRelationsB PartnerRelation[] @relation("PartnerB")
+  goalTemplates     GoalTemplate[]
+  plannedGoals      PlannedGoal[]
+  goalProgress      GoalProgress[]
+  recurringGoals    RecurringGoal[]
+  preferences       UserPreference?
+}
+
+model Workspace {
+  id               String            @id @default(cuid())
+  name             String
+  slug             String            @unique
+  type             WorkspaceType
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  memberships      Membership[]
+  partnerRelations PartnerRelation[]
+  dailyGoals       DailyGoal[]         // Keep for backward compat
+  dailyProgress    DailyProgress[]     // Keep for backward compat
+  notifications    Notification[]
+  activityLogs     ActivityLog[]
+  streakSummaries  StreakSummary[]
+  goalTemplates    GoalTemplate[]
+  plannedGoals     PlannedGoal[]
+  recurringGoals   RecurringGoal[]
+  goalProgress     GoalProgress[]
+  goalCopyHistory  GoalCopyHistory[]
+  userPreferences  UserPreference[]
+}
+
+model Membership {
+  id          String        @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+model PartnerRelation {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userAId     String
+  userBId     String
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userA       User      @relation("PartnerA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB       User      @relation("PartnerB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userAId, userBId])
+}
+
+model DailyGoal {
+  id                      String    @id @default(cuid())
+  date                    DateTime
+  userId                  String
+  workspaceId             String
+  targetDsaCount          Int       @default(0)
+  targetJobAppsCount      Int       @default(0)
+  targetSystemDesignCount Int       @default(0)
+  customGoalText          String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace               Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId, date])
+  @@index([workspaceId, date])
+}
+
+model DailyProgress {
+  id                         String    @id @default(cuid())
+  date                       DateTime
+  userId                     String
+  workspaceId                String
+  completedDsaCount          Int       @default(0)
+  completedJobAppsCount      Int       @default(0)
+  completedSystemDesignCount Int       @default(0)
+  notes                      String?
+  overallCompletionPercent   Float     @default(0)
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+  user                       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace                  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId, date])
+  @@index([workspaceId, date])
+}
+
+
+model Notification {
+  id           String               @id @default(cuid())
+  workspaceId  String
+  recipientId  String
+  actorUserId  String?
+  type         NotificationType
+  audience     NotificationAudience
+  title        String
+  message      String
+  isRead       Boolean              @default(false)
+  metadata     Json?
+  createdAt    DateTime             @default(now())
+  readAt       DateTime?
+  workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  recipient    User                 @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actorUser    User?                @relation("NotificationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([recipientId, createdAt])
+  @@index([workspaceId, createdAt])
+}
+
+model ActivityLog {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+}
+
+model StreakSummary {
+  id                String    @id @default(cuid())
+  userId            String
+  workspaceId       String
+  currentStreakDays Int       @default(0)
+  bestStreakDays    Int       @default(0)
+  missedDayCount    Int       @default(0)
+  lastCompletedDate DateTime?
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+// New flexible goal system models
+
+model GoalTemplate {
+  id               String    @id @default(cuid())
+  userId           String
+  workspaceId      String
+  title            String
+  category         String    // e.g., "DSA", "Job Search", "Learning", "Project"
+  unit             GoalUnit
+  defaultTargetValue Int
+  description      String?
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plannedGoals     PlannedGoal[] @relation("TemplateUsage")
+
+  @@index([workspaceId, active])
+  @@index([userId])
+}
+
+model PlannedGoal {
+  id               String    @id @default(cuid())
+  userId           String
+  workspaceId      String
+  date             DateTime  // The date this goal is planned for
+  title            String    // e.g., "Solve 5 DSA problems"
+  category         String    // e.g., "DSA", "Job Search", "Learning"
+  unit             GoalUnit  // e.g., PROBLEMS, JOBS, HOURS
+  targetValue      Int       // e.g., 5
+  status           GoalStatus @default(NOT_STARTED)
+  sourceTemplateId String?   // if created from a template
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  template         GoalTemplate? @relation("TemplateUsage", fields: [sourceTemplateId], references: [id], onDelete: SetNull)
+  progress         GoalProgress[]
+  recurringGoal    RecurringGoal? @relation(fields: [recurringGoalId], references: [id], onDelete: SetNull)
+  recurringGoalId  String?
+
+  @@unique([userId, workspaceId, date, title])
+  @@index([workspaceId, date])
+  @@index([userId, date])
+  @@index([workspaceId, status])
+}
+
+model GoalProgress {
+  id            String    @id @default(cuid())
+  plannedGoalId String
+  userId        String
+  workspaceId   String
+  completedValue Int     @default(0)
+  notes         String?
+  completed     Boolean   @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plannedGoal   PlannedGoal @relation(fields: [plannedGoalId], references: [id], onDelete: Cascade)
+
+  @@unique([plannedGoalId])
+  @@index([workspaceId, userId])
+}
+
+model GoalCopyHistory {
+  id            String    @id @default(cuid())
+  userId        String
+  workspaceId   String
+  sourceDate    DateTime
+  targetDate    DateTime
+  goalCount     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, userId])
+}
+
+model RecurringGoal {
+  id               String    @id @default(cuid())
+  userId           String
+  workspaceId      String
+  title            String
+  category         String
+  unit             GoalUnit
+  targetValue      Int
+  recurrenceType   RecurrenceType @default(NONE)
+  recurrenceDays   String?   // JSON array of day numbers (0-6 for Sun-Sat) or dates for MONTHLY
+  active           Boolean   @default(true)
+  startDate        DateTime?
+  endDate          DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plannedGoals     PlannedGoal[]
+
+  @@index([workspaceId, active])
+  @@index([userId])
+}
+
+model UserPreference {
+  id                            String    @id @default(cuid())
+  userId                        String    @unique
+  workspaceId                   String
+  remindSelfPendingGoals        Boolean   @default(true)
+  remindPartnerPendingGoals     Boolean   @default(true)
+  middayReminderEnabled         Boolean   @default(true)
+  eveningReminderEnabled        Boolean   @default(true)
+  middayReminderTime            String    @default("14:00")
+  eveningReminderTime           String    @default("19:00")
+  quietHoursEnabled             Boolean   @default(false)
+  quietHoursStart               String    @default("22:00")
+  quietHoursEnd                 String    @default("07:00")
+  browserNotificationsEnabled   Boolean   @default(false)
+  notifyWhenPartnerBehind       Boolean   @default(true)
+  notifyWhenPartnerCompletedAll Boolean   @default(true)
+  notifyWhenSelfCompletedAll    Boolean   @default(true)
+  realtimePartnerUpdatesEnabled Boolean   @default(true)
+  dailySummaryEnabled           Boolean   @default(true)
+  createdAt                     DateTime  @default(now())
+  updatedAt                     DateTime  @updatedAt
+  user                          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace                     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
