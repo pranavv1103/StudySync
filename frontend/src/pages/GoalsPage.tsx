@@ -152,9 +152,10 @@ export function GoalsPage() {
           notes: formData.notes,
         });
       } else {
-        // Create new goal
+        // Create new goal — send date as YYYY-MM-DD so backend always
+        // stores UTC midnight of the user's intended local date.
         await api.createPlannedGoal(token, {
-          date: new Date(formData.date).toISOString(),
+          date: formData.date,
           title: formData.title,
           category: formData.category,
           unit: formData.unit,

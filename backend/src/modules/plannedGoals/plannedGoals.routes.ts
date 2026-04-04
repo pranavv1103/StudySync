@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { requireAuth } from '../../middleware/auth.js';
 import { prisma } from '../../lib/prisma.js';
 import { emitWorkspaceEvent } from '../../lib/socket.js';
+import { parseDateToUtcStart } from '../../lib/date.js';
 import { z } from 'zod';
 import { createDynamicGoalNotifications } from '../notifications/notification.service.js';
 
@@ -25,7 +26,7 @@ const router = Router();
 
 // Validation schemas
 const createPlannedGoalSchema = z.object({
-	date: z.string().datetime(),
+	date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
 	title: z.string().min(1, 'Title is required').max(255),
 	category: z.string().min(1, 'Category is required').max(100),
 	unit: goalUnitSchema,
@@ -114,7 +115,7 @@ router.post('/', requireAuth, async (req, res) => {
 			data: {
 				userId: auth.userId,
 				workspaceId: auth.workspaceId,
-				date: new Date(data.date),
+				date: parseDateToUtcStart(data.date),
 				title: data.title,
 				category: data.category,
 				unit: data.unit,
@@ -144,7 +145,7 @@ router.post('/', requireAuth, async (req, res) => {
 		emitDynamicGoalUpdate({
 			workspaceId: auth.workspaceId,
 			userId: auth.userId,
-			date: new Date(data.date),
+			date: parseDateToUtcStart(data.date),
 			action: 'created',
 		}).catch((err: unknown) => {
 			console.error('Failed to emit goal-created notifications (non-fatal):', err);
@@ -170,8 +171,7 @@ router.get('/by-date/:date', requireAuth, async (req, res) => {
 		}
 
 		const { date } = req.params as { date: string };
-		const targetDate = new Date(date);
-		targetDate.setUTCHours(0, 0, 0, 0);
+		const targetDate = parseDateToUtcStart(date);
 
 		const goals = await prisma.plannedGoal.findMany({
 			where: {
@@ -202,8 +202,7 @@ router.get('/by-week/:startDate', requireAuth, async (req, res) => {
 		}
 
 		const { startDate } = req.params as { startDate: string };
-		const weekStart = new Date(startDate);
-		weekStart.setUTCHours(0, 0, 0, 0);
+		const weekStart = parseDateToUtcStart(startDate);
 		const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 
 		const goals = await prisma.plannedGoal.findMany({
@@ -235,8 +234,8 @@ router.get('/by-month/:year/:month', requireAuth, async (req, res) => {
 		}
 
 		const { year, month } = req.params as { year: string; month: string };
-		const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
-		const monthEnd = new Date(parseInt(year), parseInt(month), 1);
+		const monthStart = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, 1));
+		const monthEnd = new Date(Date.UTC(parseInt(year), parseInt(month), 1));
 
 		const goals = await prisma.plannedGoal.findMany({
 			where: {
@@ -494,8 +493,7 @@ router.post('/copy', requireAuth, async (req, res) => {
 			return;
 		}
 
-		const sourceStart = new Date(sourceDate);
-		sourceStart.setUTCHours(0, 0, 0, 0);
+		const sourceStart = parseDateToUtcStart(sourceDate);
 		const sourceEnd = new Date(sourceStart.getTime() + 24 * 60 * 60 * 1000);
 
 		// Get source goals
@@ -516,8 +514,7 @@ router.post('/copy', requireAuth, async (req, res) => {
 		}
 
 		// Create goals on target date
-		const targetDateParsed = new Date(targetDate);
-		targetDateParsed.setUTCHours(0, 0, 0, 0);
+		const targetDateParsed = parseDateToUtcStart(targetDate);
 
 		const copiedGoals = await Promise.all(
 			sourceGoals.map((goal: any) =>

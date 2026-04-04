@@ -82,7 +82,12 @@ export function GoalCard({
     }
   };
 
-  const dateObj = new Date(date);
+  // Extract the YYYY-MM-DD portion and construct a LOCAL date to avoid
+  // UTC-to-local conversion shifting the day (e.g. April 4 UTC midnight
+  // displays as April 3 for browsers in UTC-negative timezones).
+  const dateKey = date.split('T')[0];
+  const [yr, mo, dy] = dateKey.split('-').map(Number);
+  const dateObj = new Date(yr, mo - 1, dy);
   const dateStr = dateObj.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
