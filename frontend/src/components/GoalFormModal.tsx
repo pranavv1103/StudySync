@@ -5,6 +5,7 @@ import { todayDateKey } from '../lib/dateKey';
 interface GoalFormModalProps {
   isOpen: boolean;
   mode: 'create' | 'edit';
+  defaultDate?: string;
   initialData?: {
     title: string;
     category: string;
@@ -14,6 +15,7 @@ interface GoalFormModalProps {
     notes?: string;
     recurrenceType?: 'NONE' | 'DAILY' | 'WEEKLY';
   };
+  error?: string | null;
   onSubmit: (data: {
     title: string;
     category: string;
@@ -48,25 +50,34 @@ function todayDate() {
   return todayDateKey();
 }
 
-export function GoalFormModal({
-  isOpen,
-  mode,
-  initialData,
-  onSubmit,
-  onClose,
-  isLoading = false,
-}: GoalFormModalProps) {
-  const [formData, setFormData] = useState({
+function buildFormData(
+  initialData?: GoalFormModalProps['initialData'],
+  defaultDate?: string,
+) {
+  return {
     title: initialData?.title || '',
     category: initialData?.category || 'Learning',
     unit: initialData?.unit || 'ITEMS',
     targetValue: initialData?.targetValue || 1,
-    date: initialData?.date || todayDate(),
+    date: initialData?.date || defaultDate || todayDate(),
     notes: initialData?.notes || '',
     recurrenceType: initialData?.recurrenceType || 'NONE',
     endDate: '',
-    selectedWeekdays: [false, false, false, false, false, false, false], // Sun-Sat
-  });
+    selectedWeekdays: [false, false, false, false, false, false, false],
+  };
+}
+
+export function GoalFormModal({
+  isOpen,
+  mode,
+  defaultDate,
+  initialData,
+  error,
+  onSubmit,
+  onClose,
+  isLoading = false,
+}: GoalFormModalProps) {
+  const [formData, setFormData] = useState(() => buildFormData(initialData, defaultDate));
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -92,17 +103,24 @@ export function GoalFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg rounded-lg bg-white shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-lg rounded-lg bg-white shadow-lg flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="border-b border-slate-200 px-6 py-4">
+        <div className="border-b border-slate-200 px-6 py-4 flex-shrink-0">
           <h2 className="text-lg font-semibold text-slate-900">
             {mode === 'create' ? 'Create New Goal' : 'Edit Goal'}
           </h2>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 px-6 py-4">
+        {/* Scrollable form body */}
+        <form id="goal-form" onSubmit={handleSubmit} className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
+          {/* Inline error banner */}
+          {error && (
+            <div className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700 border border-rose-200">
+              {error}
+            </div>
+          )}
+
           {/* Title */}
           <div>
             <label htmlFor="goal-title" className="block text-sm font-medium text-slate-700">
@@ -173,7 +191,10 @@ export function GoalFormModal({
               required
               min={1}
               value={formData.targetValue}
-              onChange={(e) => setFormData({ ...formData, targetValue: parseInt(e.target.value, 10) })}
+              onChange={(e) => {
+                const parsed = parseInt(e.target.value, 10);
+                setFormData({ ...formData, targetValue: Number.isNaN(parsed) ? 1 : Math.max(1, parsed) });
+              }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 transition focus:border-blue-500 focus:outline-none"
             />
           </div>
@@ -277,25 +298,26 @@ export function GoalFormModal({
               </div>
             )}
           </div>
-
-          {/* Buttons */}
-          <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isLoading ? 'Saving...' : mode === 'create' ? 'Create Goal' : 'Save Changes'}
-            </button>
-          </div>
         </form>
+
+        {/* Sticky footer with action buttons */}
+        <div className="flex-shrink-0 flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="goal-form"
+            disabled={isLoading}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+          >
+            {isLoading ? 'Saving...' : mode === 'create' ? 'Create Goal' : 'Save Changes'}
+          </button>
+        </div>
       </div>
     </div>
   );

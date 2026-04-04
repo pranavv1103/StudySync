@@ -1,9 +1,10 @@
-import { render, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../lib/api';
 import { useRealtimeUpdatesEnabled } from '../lib/preferences';
 import { createRealtimeSocket } from '../lib/realtime';
 import { useAuthStore } from '../store/authStore';
+import { useDateStore } from '../store/dateStore';
 import { GoalsPage } from './GoalsPage';
 
 vi.mock('../lib/api', () => ({
@@ -42,6 +43,9 @@ describe('GoalsPage realtime toggle', () => {
         workspaceId: 'workspace-1',
       },
     });
+    useDateStore.setState({
+      selectedDate: '2026-04-04',
+    });
     vi.clearAllMocks();
   });
 
@@ -76,5 +80,20 @@ describe('GoalsPage realtime toggle', () => {
     expect(socket.off).toHaveBeenCalledWith('connect', expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith('workspace:goal-updated', expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith('workspace:progress-updated', expect.any(Function));
+  });
+
+  it('prefills the create modal with the currently selected planner date', async () => {
+    vi.mocked(useRealtimeUpdatesEnabled).mockReturnValue(false);
+    vi.mocked(api.getPlannedGoalsByDate).mockResolvedValue([]);
+
+    render(<GoalsPage />);
+
+    await waitFor(() => {
+      expect(api.getPlannedGoalsByDate).toHaveBeenCalledWith('token-1', '2026-04-04');
+    });
+
+    fireEvent.click(screen.getAllByText('Create Goal')[0]);
+
+    expect(screen.getByLabelText('Date *')).toHaveValue('2026-04-04');
   });
 });

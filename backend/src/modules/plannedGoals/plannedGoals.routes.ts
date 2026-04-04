@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { requireAuth } from '../../middleware/auth.js';
 import { prisma } from '../../lib/prisma.js';
 import { emitWorkspaceEvent } from '../../lib/socket.js';
@@ -138,15 +138,23 @@ router.post('/', requireAuth, async (req, res) => {
 			},
 		});
 
-		await emitDynamicGoalUpdate({
+		res.status(201).json(plannedGoal);
+
+		// Fire notifications after responding so failures never block the create response
+		emitDynamicGoalUpdate({
 			workspaceId: auth.workspaceId,
 			userId: auth.userId,
 			date: new Date(data.date),
 			action: 'created',
+		}).catch((err: unknown) => {
+			console.error('Failed to emit goal-created notifications (non-fatal):', err);
 		});
-
-		res.status(201).json(plannedGoal);
 	} catch (error) {
+		if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
+			res.status(409).json({ message: 'A goal with this title already exists for that date' });
+			return;
+		}
+
 		console.error('Error creating planned goal:', error);
 		res.status(500).json({ message: 'Failed to create planned goal' });
 	}
@@ -326,14 +334,17 @@ router.patch('/:goalId', requireAuth, async (req, res) => {
 			});
 		});
 
-		await emitDynamicGoalUpdate({
+		res.json(updated);
+
+		// Fire notifications after responding so failures never block the update response
+		emitDynamicGoalUpdate({
 			workspaceId: auth.workspaceId,
 			userId: auth.userId,
 			date: goal.date,
 			action: 'updated',
+		}).catch((err: unknown) => {
+			console.error('Failed to emit goal-updated notifications (non-fatal):', err);
 		});
-
-		res.json(updated);
 	} catch (error) {
 		console.error('Error updating planned goal:', error);
 		res.status(500).json({ message: 'Failed to update goal' });
@@ -365,14 +376,17 @@ router.delete('/:goalId', requireAuth, async (req, res) => {
 			where: { id: goalId },
 		});
 
-		await emitDynamicGoalUpdate({
+		res.status(204).send();
+
+		// Fire notifications after responding so failures never block the delete response
+		emitDynamicGoalUpdate({
 			workspaceId: auth.workspaceId,
 			userId: auth.userId,
 			date: goal.date,
 			action: 'deleted',
+		}).catch((err: unknown) => {
+			console.error('Failed to emit goal-deleted notifications (non-fatal):', err);
 		});
-
-		res.status(204).send();
 	} catch (error) {
 		console.error('Error deleting planned goal:', error);
 		res.status(500).json({ message: 'Failed to delete goal' });
@@ -447,14 +461,17 @@ router.patch('/:goalId/progress', requireAuth, async (req, res) => {
 			include: { progress: true },
 		});
 
-		await emitDynamicGoalUpdate({
+		res.json({ progress, plannedGoal });
+
+		// Fire notifications after responding so failures never block the progress response
+		emitDynamicGoalUpdate({
 			workspaceId: auth.workspaceId,
 			userId: auth.userId,
 			date: goal.date,
 			action: 'progress-updated',
+		}).catch((err: unknown) => {
+			console.error('Failed to emit progress-updated notifications (non-fatal):', err);
 		});
-
-		res.json({ progress, plannedGoal });
 	} catch (error) {
 		console.error('Error updating goal progress:', error);
 		res.status(500).json({ message: 'Failed to update progress' });

@@ -106,3 +106,36 @@ test('unauthorized progress update on partner goal returns 403', async () => {
 
   assert.equal(response.status, 403);
 });
+
+test('creating the same goal title twice for the same date returns a conflict', async () => {
+  const token = await loginAsPranav();
+  const title = `Duplicate goal ${Date.now()}`;
+  const date = new Date('2026-04-04T00:00:00.000Z').toISOString();
+
+  const firstCreate = await request(app)
+    .post('/api/planned-goals')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      date,
+      title,
+      category: 'Testing',
+      unit: 'TASKS',
+      targetValue: 1,
+    });
+
+  assert.equal(firstCreate.status, 201);
+
+  const secondCreate = await request(app)
+    .post('/api/planned-goals')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      date,
+      title,
+      category: 'Testing',
+      unit: 'TASKS',
+      targetValue: 1,
+    });
+
+  assert.equal(secondCreate.status, 409);
+  assert.equal(secondCreate.body.message, 'A goal with this title already exists for that date');
+});

@@ -8,6 +8,9 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
   ALLOWED_ORIGINS: z.string().optional(),
+  // Regex pattern for dynamic origins (e.g. Vercel preview URLs).
+  // Example: ^https://studysync.*\.vercel\.app$
+  ALLOWED_ORIGINS_PATTERN: z.string().optional(),
   PUBLIC_BASE_URL: z.string().url().optional(),
   UPLOADS_DIR: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -35,4 +38,22 @@ export function getAllowedOrigins(): string[] {
   }
 
   return Array.from(origins);
+}
+
+export function isOriginAllowed(origin: string): boolean {
+  if (getAllowedOrigins().includes(origin)) {
+    return true;
+  }
+
+  const pattern = env.ALLOWED_ORIGINS_PATTERN;
+  if (!pattern) {
+    return false;
+  }
+
+  try {
+    return new RegExp(pattern).test(origin);
+  } catch {
+    console.error('Invalid ALLOWED_ORIGINS_PATTERN regex:', pattern);
+    return false;
+  }
 }

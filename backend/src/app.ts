@@ -2,19 +2,17 @@ import cors from 'cors';
 import express from 'express';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { env, getAllowedOrigins } from './config/env.js';
+import { env, isOriginAllowed } from './config/env.js';
 import { apiRouter } from './routes/index.js';
 
 export const app = express();
-
-const allowedOrigins = getAllowedOrigins();
 
 app.set('trust proxy', true);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || isOriginAllowed(origin)) {
         callback(null, true);
         return;
       }

@@ -33,6 +33,7 @@ export function GoalsPage() {
   const [editingGoal, setEditingGoal] = useState<PlannedGoal | null>(null);
   const [activeGoalId, setActiveGoalId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const successTimeoutRef = useRef<number | null>(null);
@@ -131,14 +132,14 @@ export function GoalsPage() {
     endDate?: string;
   }) => {
     if (!token) return;
-    setError(null);
+    setFormError(null);
     setSuccessMessage(null);
     setIsLoading(true);
 
     try {
       if (editingGoal) {
         if (editingGoal.userId !== currentUserId) {
-          setError('You can only edit your own goals.');
+          setFormError('You can only edit your own goals.');
           setIsLoading(false);
           return;
         }
@@ -165,9 +166,10 @@ export function GoalsPage() {
       showTransientSuccess(editingGoal ? 'Goal updated successfully!' : 'Goal created successfully!');
       setShowFormModal(false);
       setEditingGoal(null);
+      setFormError(null);
       setRefetchTrigger((prev) => prev + 1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save goal');
+      setFormError(err instanceof Error ? err.message : 'Failed to save goal');
     } finally {
       setIsLoading(false);
     }
@@ -267,6 +269,7 @@ export function GoalsPage() {
           <button
             onClick={() => {
               setEditingGoal(null);
+              setFormError(null);
               setShowFormModal(true);
             }}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
@@ -380,6 +383,7 @@ export function GoalsPage() {
             <button
               onClick={() => {
                 setEditingGoal(null);
+                setFormError(null);
                 setShowFormModal(true);
               }}
               className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
@@ -408,6 +412,7 @@ export function GoalsPage() {
                     isMutating={activeGoalId === goal.id}
                     onEdit={() => {
                       setEditingGoal(goal);
+                      setFormError(null);
                       setShowFormModal(true);
                     }}
                     onDelete={() => handleDeleteGoal(goal.id)}
@@ -446,8 +451,10 @@ export function GoalsPage() {
 
       {/* Form Modal */}
       <GoalFormModal
+        key={`${editingGoal?.id ?? 'create'}-${selectedDate}-${showFormModal ? 'open' : 'closed'}`}
         isOpen={showFormModal}
         mode={editingGoal ? 'edit' : 'create'}
+        defaultDate={selectedDate}
         initialData={
           editingGoal
             ? {
@@ -460,10 +467,12 @@ export function GoalsPage() {
               }
             : undefined
         }
+        error={formError}
         onSubmit={handleSaveGoal}
         onClose={() => {
           setShowFormModal(false);
           setEditingGoal(null);
+          setFormError(null);
         }}
         isLoading={isLoading}
       />
