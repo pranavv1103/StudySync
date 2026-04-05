@@ -1,8 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CelebrationToast, type CelebrationPayload } from '../components/CelebrationToast';
+import { CompanionWidget } from '../components/CompanionWidget';
+import { GreetingBanner } from '../components/GreetingBanner';
 import { MemberProgressCard } from '../components/MemberProgressCard';
 import { api } from '../lib/api';
 import { addDaysToDateKey, parseDateKeyToLocalDate } from '../lib/dateKey';
+import {
+  detectMilestone,
+  getMilestoneMessage,
+  hasMilestoneBeenShown,
+  markMilestoneShown,
+} from '../lib/motivation';
 import { useRealtimeUpdatesEnabled } from '../lib/preferences';
 import { createRealtimeSocket } from '../lib/realtime';
 import { useAuthStore } from '../store/authStore';
@@ -21,15 +30,24 @@ export function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [celebration, setCelebration] = useState<CelebrationPayload | null>(null);
+
+  const prevSummaryRef = useRef<{
+    completedGoals: number;
+    completionPercent: number;
+    totalGoals: number;
+  } | null>(null);
+
+  const isToday = useMemo(() => {
+    const today = new Date();
+    const d = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return selectedDate === d;
+  }, [selectedDate]);
 
   const loadDashboard = useCallback(async () => {
-    if (!token) {
-      return;
-    }
-
+    if (!token) return;
     setLoading(true);
     setError(null);
-
     try {
       const response = await api.getDashboard(token, selectedDate);
       setData(response);
@@ -45,25 +63,51 @@ export function DashboardPage() {
   }, [loadDashboard]);
 
   useEffect(() => {
-    if (!data?.workspaceId || !user?.id) {
-      return;
+    if (!data || !isToday) return;
+
+    const myMember = data.members.find((m) => m.user.id === data.currentUserId);
+    const partnerMember = data.members.find((m) => m.user.id !== data.currentUserId);
+
+    if (!myMember) return;
+
+    const next = {
+      completedGoals: myMember.summary.completedGoals,
+      completionPercent: myMember.summary.completionPercentage,
+      totalGoals: myMember.summary.totalGoals,
+    };
+
+    const partnerDone =
+      !!partnerMember &&
+      partnerMember.summary.totalGoals > 0 &&
+      partnerMember.summary.completedGoals >= partnerMember.summary.totalGoals;
+
+    const milestoneType = detectMilestone(prevSummaryRef.current, next, partnerDone);
+
+    if (milestoneType && !hasMilestoneBeenShown(selectedDate, milestoneType)) {
+      markMilestoneShown(selectedDate, milestoneType);
+      const msg = getMilestoneMessage(milestoneType);
+      const effect =
+        milestoneType === 'all-done' || milestoneType === 'both-done' ? 'confetti' : 'none';
+      setCelebration({ ...msg, effect });
     }
 
-    if (!realtimeEnabled) {
-      return;
-    }
+    prevSummaryRef.current = next;
+  }, [data, isToday, selectedDate]);
+
+  useEffect(() => {
+    prevSummaryRef.current = null;
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (!data?.workspaceId || !user?.id) return;
+    if (!realtimeEnabled) return;
 
     const socket = createRealtimeSocket();
-
     const onConnect = () => {
-      socket.emit('join-workspace', {
-        workspaceId: data.workspaceId,
-        userId: user.id,
-      });
+      socket.emit('join-workspace', { workspaceId: data.workspaceId, userId: user.id });
     };
 
     socket.on('connect', onConnect);
-
     socket.on('workspace:progress-updated', loadDashboard);
     socket.on('workspace:goal-updated', loadDashboard);
 
@@ -91,24 +135,14 @@ export function DashboardPage() {
   });
 
   const describeStatus = (percent: number, totalGoals: number, pendingGoals: number) => {
-    if (totalGoals === 0) {
-      return { label: 'No Goals Planned', tone: 'bg-slate-100 text-slate-700' };
-    }
-
-    if (pendingGoals === 0 || percent >= 100) {
-      return { label: 'Completed', tone: 'bg-emerald-100 text-emerald-700' };
-    }
-
-    if (percent < 50) {
-      return { label: 'Behind', tone: 'bg-rose-100 text-rose-700' };
-    }
-
+    if (totalGoals === 0) return { label: 'No Goals Planned', tone: 'bg-slate-100 text-slate-700' };
+    if (pendingGoals === 0 || percent >= 100) return { label: 'Completed', tone: 'bg-emerald-100 text-emerald-700' };
+    if (percent < 50) return { label: 'Behind', tone: 'bg-rose-100 text-rose-700' };
     return { label: 'On Track', tone: 'bg-amber-100 text-amber-700' };
   };
 
   const mySummary = myMember?.summary;
   const partnerSummary = partnerMember?.summary;
-
   const myStatus = mySummary
     ? describeStatus(mySummary.completionPercentage, mySummary.totalGoals, mySummary.pendingGoals)
     : null;
@@ -117,8 +151,19 @@ export function DashboardPage() {
     : null;
   const topPending = mySummary?.remainingGoalTitles.slice(0, 3) ?? [];
 
+  const greetingCtx = {
+    name: user?.name?.split(' ')[0] ?? 'there',
+    totalGoals: mySummary?.totalGoals ?? 0,
+    completedGoals: mySummary?.completedGoals ?? 0,
+    completionPercent: Math.round(mySummary?.completionPercentage ?? 0),
+    streakDays: mySummary?.streak?.currentStreakDays ?? 0,
+    isToday,
+  };
+
   return (
     <section className="grid gap-5">
+      {!loading && <GreetingBanner ctx={greetingCtx} />}
+
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -130,9 +175,7 @@ export function DashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                setSelectedDate(addDaysToDateKey(selectedDate, -1));
-              }}
+              onClick={() => setSelectedDate(addDaysToDateKey(selectedDate, -1))}
               className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
             >
               Prev
@@ -146,9 +189,7 @@ export function DashboardPage() {
               className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
             <button
-              onClick={() => {
-                setSelectedDate(addDaysToDateKey(selectedDate, 1));
-              }}
+              onClick={() => setSelectedDate(addDaysToDateKey(selectedDate, 1))}
               className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
             >
               Next
@@ -256,6 +297,13 @@ export function DashboardPage() {
       {partnerMember ? (
         <MemberProgressCard title="Accountability Buddy Dashboard" member={partnerMember} tone="partner" />
       ) : null}
+
+      <CompanionWidget
+        completionPercent={Math.round(mySummary?.completionPercentage ?? 0)}
+        totalGoals={mySummary?.totalGoals ?? 0}
+      />
+
+      <CelebrationToast payload={celebration} onDismiss={() => setCelebration(null)} />
     </section>
   );
 }

@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { CelebrationToast, type CelebrationPayload } from '../components/CelebrationToast';
 import { GoalCard } from '../components/GoalCard';
 import { GoalFormModal } from '../components/GoalFormModal';
 import { api, type PlannedGoal } from '../lib/api';
 import { addDaysToDateKey, getWeekDateKeys, parseDateKeyToLocalDate } from '../lib/dateKey';
+import {
+  detectMilestone,
+  getMilestoneMessage,
+  hasMilestoneBeenShown,
+  markMilestoneShown,
+} from '../lib/motivation';
 import { useRealtimeUpdatesEnabled } from '../lib/preferences';
 import { createRealtimeSocket } from '../lib/realtime';
 import { useAuthStore } from '../store/authStore';
@@ -36,7 +43,13 @@ export function GoalsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
+  const [celebration, setCelebration] = useState<CelebrationPayload | null>(null);
   const successTimeoutRef = useRef<number | null>(null);
+  const prevGoalsRef = useRef<{
+    completedGoals: number;
+    completionPercent: number;
+    totalGoals: number;
+  } | null>(null);
 
   const showTransientSuccess = useCallback((message: string) => {
     setSuccessMessage(message);
@@ -118,6 +131,41 @@ export function GoalsPage() {
       socket.off('workspace:progress-updated', refresh);
     };
   }, [currentUserId, realtimeEnabled, workspaceId]);
+
+  // Reset milestone tracking when date changes
+  useEffect(() => {
+    prevGoalsRef.current = null;
+  }, [selectedDate]);
+
+  // Detect milestones when goals update (today only)
+  useEffect(() => {
+    const today = new Date();
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    if (selectedDate !== todayKey) return;
+
+    const myGoals = goals.filter(
+      (g) => g.userId === currentUserId && g.date.split('T')[0] === selectedDate,
+    );
+    if (myGoals.length === 0) return;
+
+    const completedGoals = myGoals.filter((g) => g.status === 'COMPLETED').length;
+    const totalGoals = myGoals.length;
+    const completionPercent = Math.round((completedGoals / totalGoals) * 100);
+
+    const next = { completedGoals, completionPercent, totalGoals };
+    const milestoneType = detectMilestone(prevGoalsRef.current, next, false);
+
+    if (milestoneType && !hasMilestoneBeenShown(selectedDate, milestoneType)) {
+      markMilestoneShown(selectedDate, milestoneType);
+      const msg = getMilestoneMessage(milestoneType);
+      setCelebration({
+        ...msg,
+        effect: milestoneType === 'all-done' ? 'confetti' : 'none',
+      });
+    }
+
+    prevGoalsRef.current = next;
+  }, [goals, selectedDate, currentUserId]);
 
   // Create or update goal
   const handleSaveGoal = async (formData: {
@@ -477,6 +525,8 @@ export function GoalsPage() {
         }}
         isLoading={isLoading}
       />
+
+      <CelebrationToast payload={celebration} onDismiss={() => setCelebration(null)} />
     </div>
   );
 }
