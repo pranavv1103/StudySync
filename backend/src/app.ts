@@ -33,6 +33,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'studysync-backend',
+    version: '1.1.0',
     timestamp: new Date().toISOString(),
   });
 });
