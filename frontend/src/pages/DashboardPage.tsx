@@ -2,13 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CelebrationToast, type CelebrationPayload } from '../components/CelebrationToast';
 import { CompanionWidget } from '../components/CompanionWidget';
+import { FocusCard } from '../components/FocusCard';
 import { GreetingBanner } from '../components/GreetingBanner';
 import { MemberProgressCard } from '../components/MemberProgressCard';
+import { WeeklyBadgeCard } from '../components/WeeklyBadgeCard';
 import { api } from '../lib/api';
 import { addDaysToDateKey, parseDateKeyToLocalDate } from '../lib/dateKey';
 import {
   detectMilestone,
   getMilestoneMessage,
+  getWeeklyBadge,
   hasMilestoneBeenShown,
   markMilestoneShown,
 } from '../lib/motivation';
@@ -87,7 +90,11 @@ export function DashboardPage() {
       markMilestoneShown(selectedDate, milestoneType);
       const msg = getMilestoneMessage(milestoneType);
       const effect =
-        milestoneType === 'all-done' || milestoneType === 'both-done' ? 'confetti' : 'none';
+        milestoneType === 'all-done' || milestoneType === 'both-done'
+          ? 'confetti'
+          : milestoneType === 'three-quarter'
+          ? 'burst'
+          : 'none';
       setCelebration({ ...msg, effect });
     }
 
@@ -151,18 +158,35 @@ export function DashboardPage() {
     : null;
   const topPending = mySummary?.remainingGoalTitles.slice(0, 3) ?? [];
 
+  const streakDays = mySummary?.streak?.currentStreakDays ?? 0;
+  const streakAtRisk = isToday && streakDays > 0 && (mySummary?.completedGoals ?? 0) === 0;
+
   const greetingCtx = {
     name: user?.name?.split(' ')[0] ?? 'there',
     totalGoals: mySummary?.totalGoals ?? 0,
     completedGoals: mySummary?.completedGoals ?? 0,
     completionPercent: Math.round(mySummary?.completionPercentage ?? 0),
-    streakDays: mySummary?.streak?.currentStreakDays ?? 0,
+    streakDays,
     isToday,
+    streakAtRisk,
   };
+
+  const pendingFocusGoals = (mySummary?.goals ?? []).filter((g) => !g.completed);
+  const weeklyBadge = getWeeklyBadge(streakDays, false);
+  const partnerDone =
+    !!partnerMember &&
+    partnerMember.summary.totalGoals > 0 &&
+    partnerMember.summary.completedGoals >= partnerMember.summary.totalGoals;
 
   return (
     <section className="grid gap-5">
-      {!loading && <GreetingBanner ctx={greetingCtx} />}
+      {!loading && (
+        <GreetingBanner
+          ctx={greetingCtx}
+          partnerName={partnerMember?.user.name}
+          partnerDone={partnerDone}
+        />
+      )}
 
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -292,6 +316,14 @@ export function DashboardPage() {
           )}
         </section>
       ) : null}
+
+      {isToday && pendingFocusGoals.length > 0 && (
+        <FocusCard goals={pendingFocusGoals} />
+      )}
+
+      {isToday && weeklyBadge && streakDays >= 1 && (
+        <WeeklyBadgeCard badge={weeklyBadge} daysCompleted={streakDays} />
+      )}
 
       {myMember ? <MemberProgressCard title="My Dashboard" member={myMember} tone="self" /> : null}
       {partnerMember ? (
