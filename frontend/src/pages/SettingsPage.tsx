@@ -551,6 +551,47 @@ export function SettingsPage() {
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 className="text-lg font-semibold text-slate-900">Daily Accountability Email</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Receive a daily email with both your and your accountability buddy's progress. The tone adapts - encouraging when you are on track, a gentle reminder when you need a nudge.
+        </p>
+        <div className="mt-4 grid gap-4">
+          <Toggle
+            label="Send me a daily accountability email"
+            value={settings.accountabilityPreferences.dailyEmailEnabled}
+            onChange={(value) =>
+              setSettings({
+                ...settings,
+                accountabilityPreferences: {
+                  ...settings.accountabilityPreferences,
+                  dailyEmailEnabled: value,
+                },
+              })
+            }
+          />
+          {settings.accountabilityPreferences.dailyEmailEnabled && (
+            <label className="flex items-center gap-3 text-sm text-slate-700">
+              <span className="font-medium">Send at (your timezone - {settings.profile.timezone})</span>
+              <input
+                type="time"
+                value={settings.accountabilityPreferences.dailyEmailTime}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    accountabilityPreferences: {
+                      ...settings.accountabilityPreferences,
+                      dailyEmailTime: e.target.value,
+                    },
+                  })
+                }
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </label>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-slate-900">Workspace / Accountability Buddy</h3>
         <div className="mt-4 grid gap-2 text-sm text-slate-700">
           <p>

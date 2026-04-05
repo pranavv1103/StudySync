@@ -116,6 +116,8 @@ export type SettingsResponse = {
     notifyWhenSelfCompletedAll: boolean;
     realtimePartnerUpdatesEnabled: boolean;
     dailySummaryEnabled: boolean;
+    dailyEmailEnabled: boolean;
+    dailyEmailTime: string;
   };
   workspace: {
     id: string;

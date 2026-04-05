@@ -3,6 +3,7 @@ import { Server } from 'socket.io';
 import { env, isOriginAllowed } from './config/env.js';
 import { initializeSocket } from './lib/socket.js';
 import { startReminderSchedulers } from './modules/notifications/reminder.scheduler.js';
+import { startDailyEmailScheduler } from './modules/email/daily-email.scheduler.js';
 import { app } from './app.js';
 
 const httpServer = createServer(app);
@@ -24,5 +25,6 @@ initializeSocket(io);
 
 httpServer.listen(env.PORT, () => {
   startReminderSchedulers();
+  startDailyEmailScheduler();
   console.log(`StudySync backend running on http://localhost:${env.PORT}`);
 });

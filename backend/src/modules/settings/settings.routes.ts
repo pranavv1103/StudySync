@@ -38,6 +38,8 @@ const updateSettingsSchema = z.object({
       notifyWhenSelfCompletedAll: z.boolean().optional(),
       realtimePartnerUpdatesEnabled: z.boolean().optional(),
       dailySummaryEnabled: z.boolean().optional(),
+      dailyEmailEnabled: z.boolean().optional(),
+      dailyEmailTime: hhmmSchema.optional(),
     })
     .optional(),
 });
@@ -183,6 +185,8 @@ settingsRouter.get('/', async (req, res) => {
       notifyWhenSelfCompletedAll: preferences.notifyWhenSelfCompletedAll,
       realtimePartnerUpdatesEnabled: preferences.realtimePartnerUpdatesEnabled,
       dailySummaryEnabled: preferences.dailySummaryEnabled,
+      dailyEmailEnabled: preferences.dailyEmailEnabled,
+      dailyEmailTime: preferences.dailyEmailTime,
     },
     workspace: {
       id: workspace.id,
