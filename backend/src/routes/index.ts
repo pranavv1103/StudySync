@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { activityRouter } from '../modules/activity/activity.routes.js';
 import { analyticsRouter } from '../modules/analytics/analytics.routes.js';
 import { authRouter } from '../modules/auth/auth.routes.js';
 import { dashboardRouter } from '../modules/dashboard/dashboard.routes.js';
@@ -10,6 +11,7 @@ import { settingsRouter } from '../modules/settings/settings.routes.js';
 
 export const apiRouter = Router();
 
+apiRouter.use('/activity', activityRouter);
 apiRouter.use('/analytics', analyticsRouter);
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/dashboard', dashboardRouter);

@@ -14,7 +14,7 @@ analyticsRouter.get('/', async (req, res) => {
     return;
   }
 
-  const days = Math.max(3, Math.min(30, Number(req.query.days ?? 7)));
+  const days = Math.max(3, Math.min(90, Number(req.query.days ?? 7)));
 
   const targetDateQuery = typeof req.query.date === 'string' ? req.query.date : null;
   const rangeEnd = targetDateQuery ? parseDateToUtcStart(targetDateQuery) : new Date();

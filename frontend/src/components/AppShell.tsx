@@ -1,19 +1,17 @@
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { api } from '../lib/api';
+import { createRealtimeSocket } from '../lib/realtime';
 import { useAuthStore } from '../store/authStore';
-
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/goals', label: 'Goals' },
-  { to: '/notifications', label: 'Notifications' },
-  { to: '/analytics', label: 'Analytics' },
-  { to: '/settings', label: 'Settings' },
-];
 
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
+  const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const initials = (user?.name ?? 'M')
     .split(' ')
     .map((part) => part.trim()[0])
@@ -21,6 +19,33 @@ export function AppShell() {
     .slice(0, 2)
     .join('')
     .toUpperCase();
+
+  // Fetch initial unread count
+  useEffect(() => {
+    if (!token) return;
+    api.getUnreadCount(token).then((res) => setUnreadCount(res.unread)).catch(() => {});
+  }, [token]);
+
+  // Subscribe to real-time notification:new events
+  useEffect(() => {
+    if (!token || !user) return;
+    const socket = createRealtimeSocket();
+    const onNew = () => {
+      setUnreadCount((c) => c + 1);
+    };
+    socket.on('notification:new', onNew);
+    return () => {
+      socket.off('notification:new', onNew);
+    };
+  }, [token, user]);
+
+  // When user visits notifications page, reset badge by re-fetching
+  const isOnNotifications = location.pathname.startsWith('/notifications');
+  useEffect(() => {
+    if (isOnNotifications && token) {
+      api.getUnreadCount(token).then((res) => setUnreadCount(res.unread)).catch(() => {});
+    }
+  }, [isOnNotifications, token]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#dbeafe_0%,_#eff6ff_35%,_#f8fafc_100%)] text-slate-900">
@@ -58,20 +83,30 @@ export function AppShell() {
             </div>
           </div>
           <nav className="mt-4 flex flex-wrap gap-2">
-            {navItems.map((item) => {
+            {[
+              { to: '/dashboard', label: 'Dashboard' },
+              { to: '/goals', label: 'Goals' },
+              { to: '/notifications', label: 'Notifications', badge: unreadCount },
+              { to: '/analytics', label: 'Analytics' },
+              { to: '/settings', label: 'Settings' },
+            ].map((item) => {
               const active = location.pathname.startsWith(item.to);
-
               return (
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                  className={`relative rounded-lg px-3 py-2 text-sm font-semibold transition ${
                     active
                       ? 'bg-slate-900 text-white'
                       : 'border border-slate-300 bg-white text-slate-700 hover:border-slate-400'
                   }`}
                 >
                   {item.label}
+                  {'badge' in item && (item.badge ?? 0) > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white">
+                      {(item.badge ?? 0) > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}

@@ -391,4 +391,29 @@ export const api = {
 
     return payload as { message: string; avatarUrl: string };
   },
+  getUnreadCount(token: string) {
+    return request<{ unread: number }>('/notifications/unread-count', {}, token);
+  },
+  sendPartnerReaction(token: string, type: 'CHEER' | 'NUDGE') {
+    return request<{ message: string; count: number }>(
+      '/notifications/react',
+      { method: 'POST', body: JSON.stringify({ type }) },
+      token,
+    );
+  },
+  getActivity(token: string, limit = 20) {
+    return request<{
+      items: Array<{
+        id: string;
+        action: string;
+        label: string;
+        detail: string | null;
+        entityType: string;
+        entityId: string | null;
+        actor: { id: string; name: string; avatarUrl: string | null } | null;
+        metadata: Record<string, unknown>;
+        createdAt: string;
+      }>;
+    }>(`/activity?limit=${limit}`, {}, token);
+  },
 };

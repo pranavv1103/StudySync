@@ -95,6 +95,7 @@ export function AnalyticsPage() {
           <option value={7}>Last 7 days</option>
           <option value={14}>Last 14 days</option>
           <option value={30}>Last 30 days</option>
+          <option value={90}>Last 90 days</option>
         </select>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
           Ending on {dateLabel}
@@ -141,6 +142,80 @@ export function AnalyticsPage() {
           </LineChart>
         ) : null}
       </div>
+
+      {/* Calendar Heatmap */}
+      {(data?.trend ?? []).length > 0 && (
+        <div className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Completion Heatmap</h3>
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span className="inline-block h-3 w-3 rounded-sm bg-slate-100"></span> None
+              <span className="inline-block h-3 w-3 rounded-sm bg-rose-200"></span> 0%
+              <span className="inline-block h-3 w-3 rounded-sm bg-amber-200"></span> 1-49%
+              <span className="inline-block h-3 w-3 rounded-sm bg-yellow-200"></span> 50-74%
+              <span className="inline-block h-3 w-3 rounded-sm bg-emerald-200"></span> 75-99%
+              <span className="inline-block h-3 w-3 rounded-sm bg-emerald-500"></span> 100%
+            </div>
+          </div>
+          <HeatmapGrid trend={data?.trend ?? []} />
+        </div>
+      )}
     </section>
+  );
+}
+
+type TrendDay = { date: string; selfPercent: number; partnerPercent: number };
+
+function heatColor(percent: number | null): string {
+  if (percent === null) return 'bg-slate-100';
+  if (percent === 0) return 'bg-rose-200';
+  if (percent < 50) return 'bg-amber-200';
+  if (percent < 75) return 'bg-yellow-200';
+  if (percent < 100) return 'bg-emerald-200';
+  return 'bg-emerald-500';
+}
+
+function HeatmapGrid({ trend }: { trend: TrendDay[] }) {
+  // Group days into weeks (columns of 7)
+  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+
+  // Build a weeks array - each week is up to 7 days
+  const weeks: TrendDay[][] = [];
+  for (let i = 0; i < trend.length; i += 7) {
+    weeks.push(trend.slice(i, i + 7));
+  }
+
+  return (
+    <div className="relative overflow-x-auto">
+      <div className="flex gap-1">
+        {weeks.map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-1">
+            {week.map((day) => (
+              <div
+                key={day.date}
+                className={`h-4 w-4 cursor-default rounded-sm ${heatColor(day.selfPercent)}`}
+                onMouseEnter={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setTooltip({
+                    text: `${day.date}: ${day.selfPercent.toFixed(0)}%`,
+                    x: rect.left,
+                    y: rect.top,
+                  });
+                }}
+                onMouseLeave={() => setTooltip(null)}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      {tooltip && (
+        <div
+          className="pointer-events-none fixed z-50 rounded bg-slate-900 px-2 py-1 text-xs text-white shadow-lg"
+          style={{ left: tooltip.x + 20, top: tooltip.y - 8 }}
+        >
+          {tooltip.text}
+        </div>
+      )}
+    </div>
   );
 }

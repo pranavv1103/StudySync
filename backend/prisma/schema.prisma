@@ -26,6 +26,8 @@ enum NotificationType {
   MISSED_GOAL_ALERT
   ON_TRACK_ALERT
   TEAM_SUMMARY_ALERT
+  CHEER
+  NUDGE
 }
 
 enum NotificationAudience {

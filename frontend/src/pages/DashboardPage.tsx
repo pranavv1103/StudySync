@@ -23,6 +23,15 @@ import { useDateStore } from '../store/dateStore';
 
 type DashboardData = Awaited<ReturnType<typeof api.getDashboard>>;
 
+type ActivityItem = {
+  id: string;
+  action: string;
+  label: string;
+  detail: string | null;
+  actor: { id: string; name: string; avatarUrl?: string | null } | null;
+  createdAt: string;
+};
+
 export function DashboardPage() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
@@ -37,6 +46,8 @@ export function DashboardPage() {
   const [celebration, setCelebration] = useState<CelebrationPayload | null>(null);
   const [myGoalFilter, setMyGoalFilter] = useState<GoalFilter>('all');
   const [scrollToList, setScrollToList] = useState(false);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [reactionFeedback, setReactionFeedback] = useState<string | null>(null);
   const goalListRef = useRef<HTMLDivElement>(null);
 
   const prevSummaryRef = useRef<{
@@ -140,6 +151,34 @@ export function DashboardPage() {
     () => data?.members.find((member) => member.user.id !== data.currentUserId) ?? null,
     [data],
   );
+
+  // Fetch activity feed
+  useEffect(() => {
+    if (!token) return;
+    api.getActivity(token, 10).then((res) => setActivity(res.items)).catch(() => {});
+  }, [token]);
+
+  async function handleCheer() {
+    if (!token) return;
+    try {
+      await api.sendPartnerReaction(token, 'CHEER');
+      setReactionFeedback('Cheer sent!');
+    } catch {
+      setReactionFeedback('Could not send cheer.');
+    }
+    setTimeout(() => setReactionFeedback(null), 3000);
+  }
+
+  async function handleNudge() {
+    if (!token) return;
+    try {
+      await api.sendPartnerReaction(token, 'NUDGE');
+      setReactionFeedback('Nudge sent!');
+    } catch {
+      setReactionFeedback('Could not send nudge.');
+    }
+    setTimeout(() => setReactionFeedback(null), 3000);
+  }
 
   const dateLabel = parseDateKeyToLocalDate(selectedDate).toLocaleDateString('en-US', {
     weekday: 'long',
@@ -336,8 +375,73 @@ export function DashboardPage() {
       ) : null}
 
       {partnerMember ? (
-        <MemberProgressCard title="Accountability Buddy Dashboard" member={partnerMember} tone="partner" />
+        <MemberProgressCard
+          title="Accountability Buddy Dashboard"
+          member={partnerMember}
+          tone="partner"
+          onCheer={handleCheer}
+          onNudge={handleNudge}
+        />
       ) : null}
+
+      {reactionFeedback && (
+        <p className="text-sm font-semibold text-emerald-700">{reactionFeedback}</p>
+      )}
+
+      {/* Partnership Sync Score */}
+      {myMember && partnerMember && (
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Partnership Sync</h2>
+          <div className="mt-4 flex items-center gap-6">
+            <div className="flex-1 text-center">
+              <p className="text-xs text-slate-500">{myMember.user.name}</p>
+              <p className="mt-1 text-3xl font-bold text-sky-700">
+                {Math.round(myMember.summary.completionPercentage)}%
+              </p>
+              <p className="mt-0.5 text-xs text-slate-400">{myMember.summary.streak?.currentStreakDays ?? 0} day streak</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Sync Score</p>
+              <p className="mt-1 text-4xl font-black text-slate-900">
+                {Math.round((myMember.summary.completionPercentage + partnerMember.summary.completionPercentage) / 2)}%
+              </p>
+            </div>
+            <div className="flex-1 text-center">
+              <p className="text-xs text-slate-500">{partnerMember.user.name}</p>
+              <p className="mt-1 text-3xl font-bold text-emerald-700">
+                {Math.round(partnerMember.summary.completionPercentage)}%
+              </p>
+              <p className="mt-0.5 text-xs text-slate-400">{partnerMember.summary.streak?.currentStreakDays ?? 0} day streak</p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Activity Feed */}
+      {activity.length > 0 && (
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Recent Activity</h2>
+          <ul className="mt-3 divide-y divide-slate-100">
+            {activity.map((item) => (
+              <li key={item.id} className="flex items-start gap-3 py-2.5">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+                  {(item.actor?.name ?? '?')[0].toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-slate-800">
+                    <span className="font-semibold">{item.actor?.name ?? 'Someone'}</span>{' '}
+                    {item.label}
+                    {item.detail ? <span className="text-slate-500"> - {item.detail}</span> : null}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {new Date(item.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <CompanionWidget
         completionPercent={Math.round(mySummary?.completionPercentage ?? 0)}

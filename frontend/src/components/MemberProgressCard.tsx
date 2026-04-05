@@ -15,9 +15,12 @@ type MemberProgressCardProps = {
   /** When provided the stat boxes become clickable filter triggers */
   activeFilter?: GoalFilter;
   onStatClick?: (filter: GoalFilter) => void;
+  /** Cheer/nudge handlers - only shown when tone is 'partner' */
+  onCheer?: () => void;
+  onNudge?: () => void;
 };
 
-export function MemberProgressCard({ title, member, tone, activeFilter, onStatClick }: MemberProgressCardProps) {
+export function MemberProgressCard({ title, member, tone, activeFilter, onStatClick, onCheer, onNudge }: MemberProgressCardProps) {
   const overall = member.summary.completionPercentage;
   const interactive = !!onStatClick;
 
@@ -121,6 +124,29 @@ export function MemberProgressCard({ title, member, tone, activeFilter, onStatCl
         <p className="mt-3 text-sm text-slate-600">Top pending: {pendingTitles.join(', ')}</p>
       ) : (
         <p className="mt-3 text-sm text-emerald-700">All goals completed for this date.</p>
+      )}
+
+      {tone === 'partner' && (onCheer || onNudge) && (
+        <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4">
+          {onCheer && (
+            <button
+              type="button"
+              onClick={onCheer}
+              className="flex-1 rounded-lg border border-emerald-200 bg-emerald-50 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.97]"
+            >
+              Cheer
+            </button>
+          )}
+          {onNudge && (
+            <button
+              type="button"
+              onClick={onNudge}
+              className="flex-1 rounded-lg border border-amber-200 bg-amber-50 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 active:scale-[0.97]"
+            >
+              Nudge
+            </button>
+          )}
+        </div>
       )}
     </article>
   );

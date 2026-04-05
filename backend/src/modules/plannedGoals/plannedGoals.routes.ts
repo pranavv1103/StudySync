@@ -141,6 +141,18 @@ router.post('/', requireAuth, async (req, res) => {
 
 		res.status(201).json(plannedGoal);
 
+		// Write activity log (best-effort, non-blocking)
+		prisma.activityLog.create({
+			data: {
+				workspaceId: auth.workspaceId,
+				userId: auth.userId,
+				action: 'GOAL_CREATED',
+				entityType: 'PLANNED_GOAL',
+				entityId: plannedGoal.id,
+				metadata: { title: plannedGoal.title, category: plannedGoal.category, targetValue: plannedGoal.targetValue },
+			},
+		}).catch(() => {});
+
 		// Fire notifications after responding so failures never block the create response
 		emitDynamicGoalUpdate({
 			workspaceId: auth.workspaceId,
@@ -461,6 +473,20 @@ router.patch('/:goalId/progress', requireAuth, async (req, res) => {
 		});
 
 		res.json({ progress, plannedGoal });
+
+		// Write activity log when goal is completed (best-effort, non-blocking)
+		if (nextCompleted) {
+			prisma.activityLog.create({
+				data: {
+					workspaceId: auth.workspaceId,
+					userId: auth.userId,
+					action: 'GOAL_COMPLETED',
+					entityType: 'PLANNED_GOAL',
+					entityId: goalId,
+					metadata: { title: goal.title, category: goal.category },
+				},
+			}).catch(() => {});
+		}
 
 		// Fire notifications after responding so failures never block the progress response
 		emitDynamicGoalUpdate({
