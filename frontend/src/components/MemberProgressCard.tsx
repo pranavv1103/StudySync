@@ -1,5 +1,6 @@
 import { ProgressBar } from './ProgressBar';
 import type { DynamicDailyGoalSummary } from '../lib/api';
+import type { GoalFilter } from './DashboardGoalList';
 
 type MemberProgress = {
   user: { id: string; name: string; email: string; avatarUrl?: string | null };
@@ -11,16 +12,42 @@ type MemberProgressCardProps = {
   title: string;
   member: MemberProgress;
   tone: 'self' | 'partner';
+  /** When provided the stat boxes become clickable filter triggers */
+  activeFilter?: GoalFilter;
+  onStatClick?: (filter: GoalFilter) => void;
 };
 
-export function MemberProgressCard({ title, member, tone }: MemberProgressCardProps) {
+export function MemberProgressCard({ title, member, tone, activeFilter, onStatClick }: MemberProgressCardProps) {
   const overall = member.summary.completionPercentage;
+  const interactive = !!onStatClick;
 
   const accent = tone === 'self' ? 'bg-sky-600' : 'bg-emerald-600';
   const badge = tone === 'self' ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700';
 
   const topCategories = member.summary.groupedCategories.slice(0, 3);
   const pendingTitles = member.summary.remainingGoalTitles.slice(0, 3);
+
+  function statBoxClass(filter: GoalFilter): string {
+    const base = 'rounded-xl p-3 text-left w-full transition-all duration-150';
+    if (!interactive) return `${base} bg-slate-50`;
+    const selected = activeFilter === filter;
+    if (filter === 'completed') {
+      return `${base} ${selected ? 'bg-emerald-50 ring-2 ring-emerald-300 shadow-sm' : 'bg-slate-50 hover:bg-emerald-50/60 cursor-pointer active:scale-[0.98]'}`;
+    }
+    if (filter === 'pending') {
+      return `${base} ${selected ? 'bg-sky-50 ring-2 ring-sky-300 shadow-sm' : 'bg-slate-50 hover:bg-sky-50/60 cursor-pointer active:scale-[0.98]'}`;
+    }
+    // 'all' — progress units
+    return `${base} ${selected ? 'bg-violet-50 ring-2 ring-violet-300 shadow-sm' : 'bg-slate-50 hover:bg-violet-50/60 cursor-pointer active:scale-[0.98]'}`;
+  }
+
+  function handleStatClick(filter: GoalFilter) {
+    if (!onStatClick) return;
+    // Clicking the active filter resets to all
+    onStatClick(activeFilter === filter ? 'all' : filter);
+  }
+
+  const StatBox = interactive ? 'button' : 'div';
 
   return (
     <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
@@ -34,25 +61,44 @@ export function MemberProgressCard({ title, member, tone }: MemberProgressCardPr
         </span>
       </div>
 
-      <div className="mt-4 grid gap-3 text-sm text-slate-700 md:grid-cols-3">
-        <div className="rounded-xl bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Goals Completed</p>
+      {interactive && (
+        <p className="mt-2 text-[11px] text-slate-400">Click a card to filter goals below</p>
+      )}
+
+      <div className="mt-3 grid gap-3 text-sm text-slate-700 md:grid-cols-3">
+        <StatBox
+          className={statBoxClass('completed')}
+          {...(interactive ? { onClick: () => handleStatClick('completed'), type: 'button', 'aria-pressed': activeFilter === 'completed' } : {})}
+        >
+          <p className={`text-xs uppercase tracking-wide ${activeFilter === 'completed' ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}>
+            Goals Completed {activeFilter === 'completed' ? '↓' : ''}
+          </p>
           <p className="mt-1 font-semibold">
             {member.summary.completedGoals} / {member.summary.totalGoals}
           </p>
-        </div>
-        <div className="rounded-xl bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Pending Goals</p>
+        </StatBox>
+        <StatBox
+          className={statBoxClass('pending')}
+          {...(interactive ? { onClick: () => handleStatClick('pending'), type: 'button', 'aria-pressed': activeFilter === 'pending' } : {})}
+        >
+          <p className={`text-xs uppercase tracking-wide ${activeFilter === 'pending' ? 'text-sky-600 font-bold' : 'text-slate-500'}`}>
+            Pending Goals {activeFilter === 'pending' ? '↓' : ''}
+          </p>
           <p className="mt-1 font-semibold">
             {member.summary.pendingGoals}
           </p>
-        </div>
-        <div className="rounded-xl bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Progress Units</p>
+        </StatBox>
+        <StatBox
+          className={statBoxClass('all')}
+          {...(interactive ? { onClick: () => handleStatClick('all'), type: 'button', 'aria-pressed': activeFilter === 'all' } : {})}
+        >
+          <p className={`text-xs uppercase tracking-wide ${activeFilter === 'all' && interactive ? 'text-violet-600 font-bold' : 'text-slate-500'}`}>
+            Progress Units {interactive ? '↓' : ''}
+          </p>
           <p className="mt-1 font-semibold">
             {member.summary.completedTotal} / {member.summary.targetTotal}
           </p>
-        </div>
+        </StatBox>
       </div>
 
       <div className="mt-5">

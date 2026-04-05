@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CelebrationToast, type CelebrationPayload } from '../components/CelebrationToast';
 import { CompanionWidget } from '../components/CompanionWidget';
+import { DashboardGoalList, type GoalFilter } from '../components/DashboardGoalList';
 import { FocusCard } from '../components/FocusCard';
 import { GreetingBanner } from '../components/GreetingBanner';
 import { MemberProgressCard } from '../components/MemberProgressCard';
@@ -34,6 +35,9 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<CelebrationPayload | null>(null);
+  const [myGoalFilter, setMyGoalFilter] = useState<GoalFilter>('all');
+  const [scrollToList, setScrollToList] = useState(false);
+  const goalListRef = useRef<HTMLDivElement>(null);
 
   const prevSummaryRef = useRef<{
     completedGoals: number;
@@ -103,6 +107,8 @@ export function DashboardPage() {
 
   useEffect(() => {
     prevSummaryRef.current = null;
+    setMyGoalFilter('all');
+    setScrollToList(false);
   }, [selectedDate]);
 
   useEffect(() => {
@@ -156,7 +162,14 @@ export function DashboardPage() {
   const partnerStatus = partnerSummary
     ? describeStatus(partnerSummary.completionPercentage, partnerSummary.totalGoals, partnerSummary.pendingGoals)
     : null;
-  const topPending = mySummary?.remainingGoalTitles.slice(0, 3) ?? [];
+  const allGoals = mySummary?.goals ?? [];
+
+  function handleStatClick(filter: GoalFilter) {
+    setMyGoalFilter(filter);
+    setScrollToList(true);
+    // reset scroll trigger after next paint so it can re-fire on repeated clicks
+    requestAnimationFrame(() => setScrollToList(false));
+  }
 
   const streakDays = mySummary?.streak?.currentStreakDays ?? 0;
   const streakAtRisk = isToday && streakDays > 0 && (mySummary?.completedGoals ?? 0) === 0;
@@ -290,32 +303,7 @@ export function DashboardPage() {
         </section>
       ) : null}
 
-      {mySummary ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">Today's Top Pending Goals</h3>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-              {mySummary.pendingGoals} Pending
-            </span>
-          </div>
-          {topPending.length > 0 ? (
-            <ul className="mt-3 grid gap-2">
-              {topPending.map((title, index) => (
-                <li key={title} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
-                    {index + 1}
-                  </span>
-                  <span className="text-sm text-slate-700">{title}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              No pending goals. You are fully caught up for this date.
-            </p>
-          )}
-        </section>
-      ) : null}
+
 
       {isToday && pendingFocusGoals.length > 0 && (
         <FocusCard goals={pendingFocusGoals} />
@@ -325,7 +313,28 @@ export function DashboardPage() {
         <WeeklyBadgeCard badge={weeklyBadge} daysCompleted={streakDays} />
       )}
 
-      {myMember ? <MemberProgressCard title="My Dashboard" member={myMember} tone="self" /> : null}
+      {myMember ? (
+        <MemberProgressCard
+          title="My Dashboard"
+          member={myMember}
+          tone="self"
+          activeFilter={myGoalFilter}
+          onStatClick={handleStatClick}
+        />
+      ) : null}
+
+      {/* Filtered goal list - renders directly below My Dashboard card */}
+      {mySummary && allGoals.length > 0 ? (
+        <div ref={goalListRef}>
+          <DashboardGoalList
+            filter={myGoalFilter}
+            goals={allGoals}
+            onReset={() => setMyGoalFilter('all')}
+            scrollIntoView={scrollToList}
+          />
+        </div>
+      ) : null}
+
       {partnerMember ? (
         <MemberProgressCard title="Accountability Buddy Dashboard" member={partnerMember} tone="partner" />
       ) : null}
