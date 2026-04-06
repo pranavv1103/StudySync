@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface GoalCardProps {
   title: string;
@@ -61,12 +61,29 @@ export function GoalCard({
 }: GoalCardProps) {
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [progressInput, setProgressInput] = useState('');
+  const [barGlowing, setBarGlowing] = useState(false);
+  const prevPercentRef = useRef<number | null>(null);
 
   const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS['Learning'];
   const unitLabel = UNIT_LABELS[unit] || unit.toLowerCase();
   const isCompleted = completed || status === 'COMPLETED' || completedValue >= targetValue;
   const normalizedCompletedValue = Math.min(isCompleted ? targetValue : completedValue, targetValue);
   const progressPercent = Math.min(100, Math.round((normalizedCompletedValue / targetValue) * 100) || 0);
+
+  // Glow the progress bar only when it transitions TO 100% (not on initial server load).
+  useEffect(() => {
+    if (prevPercentRef.current !== null && prevPercentRef.current < 100 && progressPercent >= 100) {
+      const glowOn = setTimeout(() => {
+        setBarGlowing(true);
+      }, 0);
+      const glowOff = setTimeout(() => setBarGlowing(false), 2200);
+      return () => {
+        clearTimeout(glowOn);
+        clearTimeout(glowOff);
+      };
+    }
+    prevPercentRef.current = progressPercent;
+  }, [progressPercent]);
 
   const handleIncrementProgress = () => {
     if (!onUpdateProgress || isCompleted || isMutating) return;
@@ -172,9 +189,9 @@ export function GoalCard({
         </div>
         <div className="h-2 rounded-full bg-slate-200">
           <div
-            className={`h-2 rounded-full transition-all ${
+            className={`h-2 rounded-full transition-all duration-300 ${
               isCompleted ? 'bg-emerald-500' : 'bg-blue-500'
-            }`}
+            } ${barGlowing ? 'animate-glow-bar' : ''}`}
             style={{ width: `${progressPercent}%` }}
           />
         </div>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BadgeWall } from '../components/BadgeWall';
+import { CelebrationOverlay } from '../components/CelebrationOverlay';
 import { CelebrationToast, type CelebrationPayload } from '../components/CelebrationToast';
 import { CompanionWidget } from '../components/CompanionWidget';
 import { DashboardGoalList, type GoalFilter } from '../components/DashboardGoalList';
@@ -46,6 +47,7 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<CelebrationPayload | null>(null);
+  const [completionOverlay, setCompletionOverlay] = useState<'all-done' | 'both-done' | null>(null);
   const [myGoalFilter, setMyGoalFilter] = useState<GoalFilter>('all');
   const [scrollToList, setScrollToList] = useState(false);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
@@ -106,13 +108,16 @@ export function DashboardPage() {
     if (milestoneType && !hasMilestoneBeenShown(selectedDate, milestoneType)) {
       markMilestoneShown(selectedDate, milestoneType);
       const msg = getMilestoneMessage(milestoneType);
-      const effect =
+      const effect: CelebrationPayload['effect'] =
         milestoneType === 'all-done' || milestoneType === 'both-done'
           ? 'confetti'
           : milestoneType === 'three-quarter'
           ? 'burst'
           : 'none';
-      setCelebration({ ...msg, effect });
+      setCelebration({ ...msg, effect, milestoneType });
+      if (milestoneType === 'all-done' || milestoneType === 'both-done') {
+        setCompletionOverlay(milestoneType);
+      }
     }
 
     prevSummaryRef.current = next;
@@ -460,6 +465,12 @@ export function DashboardPage() {
       />
 
       <CelebrationToast payload={celebration} onDismiss={() => setCelebration(null)} />
+
+      <CelebrationOverlay
+        visible={completionOverlay !== null}
+        variant={completionOverlay ?? 'all-done'}
+        onClose={() => setCompletionOverlay(null)}
+      />
     </section>
   );
 }

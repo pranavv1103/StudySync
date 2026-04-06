@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, type SettingsResponse } from '../lib/api';
 import { cacheSettings } from '../lib/preferences';
+import { getReducedMotionEnabled, setReducedMotionEnabled } from '../lib/preferences';
 import { useAuthStore } from '../store/authStore';
 
 type SettingsDraft = SettingsResponse;
@@ -613,6 +614,16 @@ export function SettingsPage() {
         </div>
       </div>
 
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 className="text-lg font-semibold text-slate-900">Animations</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Reduce or disable celebration animations if you prefer a simpler experience or have motion sensitivity.
+        </p>
+        <div className="mt-4">
+          <AnimationToggle />
+        </div>
+      </div>
+
       <div className="flex justify-end">
         <button
           onClick={saveSettings}
@@ -639,6 +650,31 @@ function Toggle({
     <label className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm">
       <span className="text-slate-700">{label}</span>
       <input type="checkbox" checked={value} onChange={(event) => onChange(event.target.checked)} />
+    </label>
+  );
+}
+
+function AnimationToggle() {
+  const [reduced, setReduced] = useState(() => getReducedMotionEnabled());
+
+  const handleChange = (value: boolean) => {
+    setReduced(value);
+    setReducedMotionEnabled(value);
+  };
+
+  return (
+    <label className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm">
+      <div>
+        <span className="font-medium text-slate-700">Reduce celebration animations</span>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Disables confetti, overlays, sparkles, and progress bar glow effects.
+        </p>
+      </div>
+      <input
+        type="checkbox"
+        checked={reduced}
+        onChange={(event) => handleChange(event.target.checked)}
+      />
     </label>
   );
 }

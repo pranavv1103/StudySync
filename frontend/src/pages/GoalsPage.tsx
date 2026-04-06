@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { CelebrationOverlay } from '../components/CelebrationOverlay';
 import { CelebrationToast, type CelebrationPayload } from '../components/CelebrationToast';
 import { GoalCard } from '../components/GoalCard';
 import { GoalFormModal } from '../components/GoalFormModal';
@@ -44,6 +45,7 @@ export function GoalsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const [celebration, setCelebration] = useState<CelebrationPayload | null>(null);
+  const [completionOverlay, setCompletionOverlay] = useState<'all-done' | 'both-done' | null>(null);
   const successTimeoutRef = useRef<number | null>(null);
   const prevGoalsRef = useRef<{
     completedGoals: number;
@@ -158,10 +160,16 @@ export function GoalsPage() {
     if (milestoneType && !hasMilestoneBeenShown(selectedDate, milestoneType)) {
       markMilestoneShown(selectedDate, milestoneType);
       const msg = getMilestoneMessage(milestoneType);
-      setCelebration({
-        ...msg,
-        effect: milestoneType === 'all-done' ? 'confetti' : 'none',
-      });
+      const effect: CelebrationPayload['effect'] =
+        milestoneType === 'all-done' || milestoneType === 'both-done'
+          ? 'confetti'
+          : milestoneType === 'three-quarter'
+          ? 'burst'
+          : 'none';
+      setCelebration({ ...msg, effect, milestoneType });
+      if (milestoneType === 'all-done' || milestoneType === 'both-done') {
+        setCompletionOverlay(milestoneType);
+      }
     }
 
     prevGoalsRef.current = next;
@@ -533,6 +541,12 @@ export function GoalsPage() {
       />
 
       <CelebrationToast payload={celebration} onDismiss={() => setCelebration(null)} />
+
+      <CelebrationOverlay
+        visible={completionOverlay !== null}
+        variant={completionOverlay ?? 'all-done'}
+        onClose={() => setCompletionOverlay(null)}
+      />
     </div>
   );
 }

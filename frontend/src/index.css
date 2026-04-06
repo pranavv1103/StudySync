@@ -60,3 +60,91 @@ body {
   animation: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+/* ── Celebration overlay ───────────────────────────────────────────────────── */
+
+@keyframes celebration-enter {
+  0%   { transform: scale(0.82) translateY(28px); opacity: 0; }
+  65%  { transform: scale(1.04) translateY(-3px); }
+  100% { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+.animate-celebration-enter {
+  animation: celebration-enter 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Confetti pieces that float upward for the overlay */
+@keyframes confetti-rise {
+  0%   { transform: translateY(0)      rotate(0deg);   opacity: 1; }
+  80%  { opacity: 0.8; }
+  100% { transform: translateY(-110vh) rotate(540deg); opacity: 0; }
+}
+.animate-confetti-rise {
+  animation: confetti-rise var(--cdur, 3s) ease-out var(--cdelay, 0s) both;
+}
+
+/* ── Sparkle burst for 75% toast ──────────────────────────────────────────── */
+
+@keyframes sparkle-fling {
+  0%   { transform: translate(0, 0) scale(1);   opacity: 1; }
+  100% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(0.15); opacity: 0; }
+}
+.animate-sparkle-fling {
+  animation: sparkle-fling 0.65s ease-out var(--sdelay, 0s) both;
+}
+
+/* ── Progress bar glow when goal completes ────────────────────────────────── */
+
+@keyframes glow-bar {
+  0%   { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0);    }
+  35%  { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.35), 0 0 20px 3px rgba(34, 197, 94, 0.18); }
+  100% { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0);    }
+}
+.animate-glow-bar {
+  animation: glow-bar 1s ease-out 2;
+}
+
+/* ── Emoji pulse on overlay card ──────────────────────────────────────────── */
+
+@keyframes emoji-pulse {
+  0%, 100% { transform: scale(1);    }
+  50%       { transform: scale(1.18); }
+}
+.animate-emoji-pulse {
+  animation: emoji-pulse 1.4s ease-in-out infinite;
+}
+
+/* ── Shimmer highlight sweep ──────────────────────────────────────────────── */
+
+@keyframes shimmer-sweep {
+  from { transform: translateX(-200%); }
+  to   { transform: translateX(200%);  }
+}
+.animate-shimmer-sweep {
+  animation: shimmer-sweep 1.8s ease-in-out 1;
+}
+
+/* ── Fade in ──────────────────────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.35s ease-out both;
+}
+
+/* ── Reduce-motion: disable all celebration animations ────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-confetti-fall,
+  .animate-confetti-rise,
+  .animate-sparkle-fling,
+  .animate-celebration-enter,
+  .animate-emoji-pulse,
+  .animate-shimmer-sweep,
+  .animate-glow-bar,
+  .animate-bounce-once,
+  .animate-pop-in {
+    animation: none !important;
+  }
+}
+
