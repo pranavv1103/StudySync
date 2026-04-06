@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BadgeWall } from '../components/BadgeWall';
 import { CelebrationToast, type CelebrationPayload } from '../components/CelebrationToast';
 import { CompanionWidget } from '../components/CompanionWidget';
 import { DashboardGoalList, type GoalFilter } from '../components/DashboardGoalList';
@@ -20,6 +21,7 @@ import { useRealtimeUpdatesEnabled } from '../lib/preferences';
 import { createRealtimeSocket } from '../lib/realtime';
 import { useAuthStore } from '../store/authStore';
 import { useDateStore } from '../store/dateStore';
+import { computeBadges } from '../lib/badges';
 
 type DashboardData = Awaited<ReturnType<typeof api.getDashboard>>;
 
@@ -230,6 +232,11 @@ export function DashboardPage() {
     partnerMember.summary.totalGoals > 0 &&
     partnerMember.summary.completedGoals >= partnerMember.summary.totalGoals;
 
+  const earnedBadges = useMemo(() => {
+    if (!mySummary) return [];
+    return computeBadges(mySummary, partnerMember?.summary ?? null);
+  }, [mySummary, partnerMember]);
+
   return (
     <section className="grid gap-5">
       {!loading && (
@@ -238,6 +245,10 @@ export function DashboardPage() {
           partnerName={partnerMember?.user.name}
           partnerDone={partnerDone}
         />
+      )}
+
+      {isToday && earnedBadges.length > 0 && (
+        <BadgeWall badges={earnedBadges} />
       )}
 
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">

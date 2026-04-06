@@ -12,6 +12,7 @@ interface GoalFormModalProps {
     unit: string;
     targetValue: number;
     date: string;
+    difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
     notes?: string;
     recurrenceType?: 'NONE' | 'DAILY' | 'WEEKLY';
   };
@@ -22,6 +23,7 @@ interface GoalFormModalProps {
     unit: string;
     targetValue: number;
     date: string;
+    difficulty: 'EASY' | 'MEDIUM' | 'HARD';
     notes?: string;
     recurrenceType?: 'NONE' | 'DAILY' | 'WEEKLY';
     recurrenceDays?: number[];
@@ -60,6 +62,7 @@ function buildFormData(
     unit: initialData?.unit || 'ITEMS',
     targetValue: initialData?.targetValue || 1,
     date: initialData?.date || defaultDate || todayDate(),
+    difficulty: (initialData?.difficulty || 'MEDIUM') as 'EASY' | 'MEDIUM' | 'HARD',
     notes: initialData?.notes || '',
     recurrenceType: initialData?.recurrenceType || 'NONE',
     endDate: '',
@@ -91,6 +94,7 @@ export function GoalFormModal({
       unit: formData.unit,
       targetValue: formData.targetValue,
       date: formData.date,
+      difficulty: formData.difficulty,
       notes: formData.notes || undefined,
       recurrenceType: formData.recurrenceType as 'NONE' | 'DAILY' | 'WEEKLY',
       recurrenceDays: selectedWeekdayIndices.length > 0 ? selectedWeekdayIndices : undefined,
@@ -197,6 +201,31 @@ export function GoalFormModal({
               }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 transition focus:border-blue-500 focus:outline-none"
             />
+          </div>
+
+          {/* Difficulty */}
+          <div>
+            <span className="block text-sm font-medium text-slate-700">Difficulty</span>
+            <div className="mt-2 flex gap-2">
+              {(['EASY', 'MEDIUM', 'HARD'] as const).map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, difficulty: level })}
+                  className={`flex-1 rounded-lg border py-2 text-xs font-semibold transition ${
+                    formData.difficulty === level
+                      ? level === 'EASY'
+                        ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                        : level === 'MEDIUM'
+                        ? 'border-amber-400 bg-amber-50 text-amber-700'
+                        : 'border-rose-400 bg-rose-50 text-rose-700'
+                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  {level === 'EASY' ? 'Easy (x1)' : level === 'MEDIUM' ? 'Medium (x3)' : 'Hard (x5)'}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Date */}

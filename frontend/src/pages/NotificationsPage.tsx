@@ -18,6 +18,16 @@ export function NotificationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [markingId, setMarkingId] = useState<string | null>(null);
   const [markingGroup, setMarkingGroup] = useState<'SELF' | 'PARTNER' | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+
+  const TYPE_FILTER_OPTIONS: { label: string; value: string | null }[] = [
+    { label: 'All', value: null },
+    { label: 'Cheers', value: 'CHEER' },
+    { label: 'Nudges', value: 'NUDGE' },
+    { label: 'Streaks', value: 'STREAK_ALERT' },
+    { label: 'Progress', value: 'SELF_PROGRESS_ALERT' },
+    { label: 'Missed', value: 'MISSED_GOAL_ALERT' },
+  ];
 
   const loadNotifications = useCallback(async () => {
     if (!token) {
@@ -98,8 +108,14 @@ export function NotificationsPage() {
     }
   };
 
-  const unreadMy = (data?.myAlerts ?? []).filter((alert) => !alert.isRead).length;
-  const unreadPartner = (data?.partnerAlerts ?? []).filter((alert) => !alert.isRead).length;
+  const filteredMyAlerts = (data?.myAlerts ?? []).filter(
+    (alert) => typeFilter === null || alert.type === typeFilter,
+  );
+  const filteredPartnerAlerts = (data?.partnerAlerts ?? []).filter(
+    (alert) => typeFilter === null || alert.type === typeFilter,
+  );
+  const unreadMy = filteredMyAlerts.filter((alert) => !alert.isRead).length;
+  const unreadPartner = filteredPartnerAlerts.filter((alert) => !alert.isRead).length;
 
   useEffect(() => {
     if (!token || !user?.id || !user.workspaceId) {
@@ -198,6 +214,23 @@ export function NotificationsPage() {
 
       {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
 
+      <div className="mt-4 flex flex-wrap gap-2">
+        {TYPE_FILTER_OPTIONS.map((option) => (
+          <button
+            key={option.value ?? 'all'}
+            type="button"
+            onClick={() => setTypeFilter(option.value)}
+            className={
+              typeFilter === option.value
+                ? 'rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white'
+                : 'rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50'
+            }
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200 p-4">
           <div className="flex items-center justify-between gap-2">
@@ -216,13 +249,13 @@ export function NotificationsPage() {
               </button>
             </div>
           </div>
-          {(data?.myAlerts ?? []).length === 0 ? (
+          {filteredMyAlerts.length === 0 ? (
             <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
               No personal alerts yet for this date.
             </p>
           ) : (
             <ul className="mt-3 space-y-3">
-              {(data?.myAlerts ?? []).slice(0, 8).map((alert) => (
+              {filteredMyAlerts.slice(0, 8).map((alert) => (
                 <li key={alert.id} className={`rounded-lg p-3 ${alert.isRead ? 'bg-slate-50' : 'bg-sky-50'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -268,13 +301,13 @@ export function NotificationsPage() {
               </button>
             </div>
           </div>
-          {(data?.partnerAlerts ?? []).length === 0 ? (
+          {filteredPartnerAlerts.length === 0 ? (
             <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
               No accountability buddy alerts right now. You are synced.
             </p>
           ) : (
             <ul className="mt-3 space-y-3">
-              {(data?.partnerAlerts ?? []).slice(0, 8).map((alert) => (
+              {filteredPartnerAlerts.slice(0, 8).map((alert) => (
                 <li key={alert.id} className={`rounded-lg p-3 ${alert.isRead ? 'bg-emerald-50' : 'bg-amber-50'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div>

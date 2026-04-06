@@ -8,6 +8,7 @@ interface GoalCardProps {
   completed?: boolean;
   unit: string;
   date: string;
+  difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
   notes?: string;
   isEditable?: boolean;
@@ -48,6 +49,7 @@ export function GoalCard({
   completed = false,
   unit,
   date,
+  difficulty,
   status,
   notes,
   isEditable = true,
@@ -99,11 +101,22 @@ export function GoalCard({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className={`text-base font-semibold ${colors.text}`}>{title}</h3>
             <span className={`rounded-full px-2 py-1 text-xs font-medium ${colors.badge}`}>
               {category}
             </span>
+            {difficulty && (
+              <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                difficulty === 'EASY'
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : difficulty === 'HARD'
+                  ? 'bg-rose-100 text-rose-700'
+                  : 'bg-amber-100 text-amber-700'
+              }`}>
+                {difficulty === 'EASY' ? 'Easy' : difficulty === 'MEDIUM' ? 'Medium' : 'Hard'}
+              </span>
+            )}
           </div>
           {notes && <p className="mt-2 text-xs text-slate-600">{notes}</p>}
         </div>

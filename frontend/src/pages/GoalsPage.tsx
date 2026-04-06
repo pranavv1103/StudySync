@@ -174,6 +174,7 @@ export function GoalsPage() {
     unit: string;
     targetValue: number;
     date: string;
+    difficulty: 'EASY' | 'MEDIUM' | 'HARD';
     notes?: string;
     recurrenceType?: 'NONE' | 'DAILY' | 'WEEKLY';
     recurrenceDays?: number[];
@@ -197,6 +198,7 @@ export function GoalsPage() {
           category: formData.category,
           unit: formData.unit,
           targetValue: formData.targetValue,
+          difficulty: formData.difficulty,
           notes: formData.notes,
         });
       } else {
@@ -208,6 +210,7 @@ export function GoalsPage() {
           category: formData.category,
           unit: formData.unit,
           targetValue: formData.targetValue,
+          difficulty: formData.difficulty,
           notes: formData.notes,
         });
       }
@@ -455,6 +458,7 @@ export function GoalsPage() {
                     completed={goal.progress[0]?.completed || false}
                     unit={goal.unit}
                     date={goal.date}
+                    difficulty={goal.difficulty}
                     status={goal.status}
                     notes={goal.notes}
                     isEditable={true}
@@ -477,7 +481,7 @@ export function GoalsPage() {
                 <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600">Accountability Buddy Goals (View Only)</h3>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {partnerGoals.map((goal) => (
-                    <GoalCard
+                  <GoalCard
                       key={goal.id}
                       title={goal.title}
                       category={goal.category}
@@ -486,6 +490,7 @@ export function GoalsPage() {
                       completed={goal.progress[0]?.completed || false}
                       unit={goal.unit}
                       date={goal.date}
+                      difficulty={goal.difficulty}
                       status={goal.status}
                       notes={goal.notes}
                       isEditable={false}
@@ -512,6 +517,7 @@ export function GoalsPage() {
                 unit: editingGoal.unit,
                 targetValue: editingGoal.targetValue,
                 date: editingGoal.date.split('T')[0],
+                difficulty: editingGoal.difficulty,
                 notes: editingGoal.notes,
               }
             : undefined

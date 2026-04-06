@@ -8,6 +8,7 @@ type GoalWithProgressAndUser = {
   category: string;
   unit: string;
   targetValue: number;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
   progress: Array<{
     completedValue: number;
@@ -27,6 +28,7 @@ export type DynamicGoalItem = {
   category: string;
   unit: string;
   targetValue: number;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   completedValue: number;
   completed: boolean;
   remainingValue: number;
@@ -105,6 +107,7 @@ function buildSummary(
       category: goal.category,
       unit: goal.unit,
       targetValue: goal.targetValue,
+      difficulty: goal.difficulty,
       completedValue,
       completed,
       remainingValue: Math.max(goal.targetValue - completedValue, 0),
@@ -196,7 +199,16 @@ export async function getDailyGoalsForUser(userId: string, date: Date, workspace
         lt: dayEnd,
       },
     },
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      date: true,
+      title: true,
+      category: true,
+      unit: true,
+      targetValue: true,
+      difficulty: true,
+      status: true,
       progress: {
         select: {
           completedValue: true,

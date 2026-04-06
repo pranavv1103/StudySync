@@ -31,6 +31,7 @@ const createPlannedGoalSchema = z.object({
 	category: z.string().min(1, 'Category is required').max(100),
 	unit: goalUnitSchema,
 	targetValue: z.number().int().positive('Target must be positive'),
+	difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
 	sourceTemplateId: z.string().optional(),
 	notes: z.string().optional(),
 });
@@ -40,6 +41,7 @@ const updatePlannedGoalSchema = z.object({
 	category: z.string().min(1).max(100).optional(),
 	unit: goalUnitSchema.optional(),
 	targetValue: z.number().int().positive().optional(),
+	difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
 	status: goalStatusSchema.optional(),
 	notes: z.string().optional(),
 });
@@ -120,6 +122,7 @@ router.post('/', requireAuth, async (req, res) => {
 				category: data.category,
 				unit: data.unit,
 				targetValue: data.targetValue,
+				difficulty: data.difficulty ?? 'MEDIUM',
 				sourceTemplateId: data.sourceTemplateId,
 				notes: data.notes || null,
 				status: 'NOT_STARTED',
@@ -314,6 +317,7 @@ router.patch('/:goalId', requireAuth, async (req, res) => {
 			category?: string;
 			unit?: (typeof data.unit);
 			targetValue?: number;
+			difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
 			status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
 			notes?: string;
 		} = {
@@ -324,6 +328,7 @@ router.patch('/:goalId', requireAuth, async (req, res) => {
 		if (data.category !== undefined) goalUpdateData.category = data.category;
 		if (data.unit !== undefined) goalUpdateData.unit = data.unit;
 		if (data.targetValue !== undefined) goalUpdateData.targetValue = data.targetValue;
+		if (data.difficulty !== undefined) goalUpdateData.difficulty = data.difficulty;
 		if (data.notes !== undefined) goalUpdateData.notes = data.notes;
 
 		const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {

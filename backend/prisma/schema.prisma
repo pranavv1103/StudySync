@@ -64,6 +64,12 @@ enum RecurrenceType {
   MONTHLY
 }
 
+enum GoalDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 model User {
   id                String          @id @default(cuid())
   name              String
@@ -261,6 +267,7 @@ model PlannedGoal {
   unit             GoalUnit  // e.g., PROBLEMS, JOBS, HOURS
   targetValue      Int       // e.g., 5
   status           GoalStatus @default(NOT_STARTED)
+  difficulty       GoalDifficulty @default(MEDIUM)
   sourceTemplateId String?   // if created from a template
   notes            String?
   createdAt        DateTime  @default(now())

@@ -27,6 +27,7 @@ export type PlannedGoal = {
   category: string;
   unit: string;
   targetValue: number;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   date: string;
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
   notes?: string;
@@ -222,6 +223,7 @@ export const api = {
       category: string;
       unit: string;
       targetValue: number;
+      difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
       notes?: string;
     },
   ) {
@@ -242,6 +244,7 @@ export const api = {
       category?: string;
       unit?: string;
       targetValue?: number;
+      difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
       notes?: string;
       status?: string;
     },
