@@ -5,9 +5,9 @@ import { app } from '../app.js';
 
 async function loginAsPranav() {
   const response = await request(app).post('/api/auth/login').send({
-    email: 'pranav.l1903@gmail.com',
-    password: 'pranav123',
-    workspaceSlug: 'pranav-sneha-accountability-circle',
+    email: 'user1@example.com',
+    password: 'changeme1',
+    workspaceSlug: 'my-accountability-circle',
   });
 
   assert.equal(response.status, 200);
@@ -16,9 +16,9 @@ async function loginAsPranav() {
 
 async function loginAsSneha() {
   const response = await request(app).post('/api/auth/login').send({
-    email: 'REMOVED',
-    password: 'sneha123',
-    workspaceSlug: 'pranav-sneha-accountability-circle',
+    email: 'user2@example.com',
+    password: 'changeme2',
+    workspaceSlug: 'my-accountability-circle',
   });
 
   assert.equal(response.status, 200);

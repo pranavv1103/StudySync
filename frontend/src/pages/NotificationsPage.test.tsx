@@ -33,7 +33,7 @@ describe('NotificationsPage', () => {
       user: {
         id: 'user-1',
         name: 'Pranav',
-        email: 'pranav.l1903@gmail.com',
+        email: 'test@example.com',
         workspaceId: 'workspace-1',
       },
     });

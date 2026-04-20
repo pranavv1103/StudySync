@@ -15,27 +15,27 @@ function getDate(offsetDays: number): Date {
 
 async function seed(): Promise<void> {
 	const [pranavPassword, partnerPassword] = await Promise.all([
-		bcrypt.hash('pranav123', 10),
-		bcrypt.hash('sneha123', 10),
+		bcrypt.hash(process.env.SEED_USER1_PASSWORD ?? 'changeme1', 10),
+		bcrypt.hash(process.env.SEED_USER2_PASSWORD ?? 'changeme2', 10),
 	]);
 
 	const [pranav, partner] = await Promise.all([
 		prisma.user.upsert({
-			where: { email: 'pranav.l1903@gmail.com' },
+			where: { email: process.env.SEED_USER1_EMAIL ?? 'user1@example.com' },
 			update: { name: 'Pranav', password: pranavPassword, timezone: 'Asia/Kolkata' },
 			create: {
 				name: 'Pranav',
-				email: 'pranav.l1903@gmail.com',
+				email: process.env.SEED_USER1_EMAIL ?? 'user1@example.com',
 				password: pranavPassword,
 				timezone: 'Asia/Kolkata',
 			},
 		}),
 		prisma.user.upsert({
-			where: { email: 'REMOVED' },
+			where: { email: process.env.SEED_USER2_EMAIL ?? 'user2@example.com' },
 			update: { name: 'Sneha', password: partnerPassword, timezone: 'Asia/Kolkata' },
 			create: {
 				name: 'Sneha',
-				email: 'REMOVED',
+				email: process.env.SEED_USER2_EMAIL ?? 'user2@example.com',
 				password: partnerPassword,
 				timezone: 'Asia/Kolkata',
 			},
@@ -43,14 +43,14 @@ async function seed(): Promise<void> {
 	]);
 
 	const workspace = await prisma.workspace.upsert({
-		where: { slug: 'pranav-sneha-accountability-circle' },
+		where: { slug: process.env.SEED_WORKSPACE_SLUG ?? 'my-accountability-circle' },
 		update: {
-			name: 'Pranav + Sneha Accountability Circle',
+			name: process.env.SEED_WORKSPACE_NAME ?? 'My Accountability Circle',
 			type: WorkspaceType.PARTNER,
 		},
 		create: {
-			name: 'Pranav + Sneha Accountability Circle',
-			slug: 'pranav-sneha-accountability-circle',
+			name: process.env.SEED_WORKSPACE_NAME ?? 'My Accountability Circle',
+			slug: process.env.SEED_WORKSPACE_SLUG ?? 'my-accountability-circle',
 			type: WorkspaceType.PARTNER,
 		},
 	});

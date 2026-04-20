@@ -12,9 +12,9 @@ test('GET /api/health responds with ok', async () => {
 
 test('POST /api/auth/login returns token for seeded Pranav', async () => {
   const response = await request(app).post('/api/auth/login').send({
-    email: 'pranav.l1903@gmail.com',
-    password: 'pranav123',
-    workspaceSlug: 'pranav-sneha-accountability-circle',
+    email: 'user1@example.com',
+    password: 'changeme1',
+    workspaceSlug: 'my-accountability-circle',
   });
 
   assert.equal(response.status, 200);

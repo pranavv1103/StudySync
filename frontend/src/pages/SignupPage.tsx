@@ -29,7 +29,7 @@ export function SignupPage() {
       const idToken = await requestGoogleIdToken(googleClientId);
       const response = await api.loginWithGoogle({
         idToken,
-        workspaceSlug: 'pranav-sneha-accountability-circle',
+        workspaceSlug: 'my-accountability-circle',
       });
 
       setAuth(response.token, response.user);
@@ -51,7 +51,7 @@ export function SignupPage() {
         name,
         email,
         password,
-        workspaceSlug: 'pranav-sneha-accountability-circle',
+        workspaceSlug: 'my-accountability-circle',
       });
 
       setAuth(response.token, response.user);

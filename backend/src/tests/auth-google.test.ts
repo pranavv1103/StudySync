@@ -30,7 +30,7 @@ test.after(() => {
 test('Google sign-in links existing password user without creating duplicates', async () => {
   env.GOOGLE_CLIENT_ID = 'test-google-client-id';
 
-  const email = 'pranav.l1903@gmail.com';
+  const email = 'user1@example.com';
   const original = await prisma.user.findUnique({ where: { email }, select: { id: true, googleId: true } });
   assert.ok(original);
 
@@ -46,7 +46,7 @@ test('Google sign-in links existing password user without creating duplicates', 
 
   const response = await request(app).post('/api/auth/google').send({
     idToken: 'fake-id-token',
-    workspaceSlug: 'pranav-sneha-accountability-circle',
+    workspaceSlug: 'my-accountability-circle',
   });
 
   assert.equal(response.status, 200);
@@ -61,8 +61,8 @@ test('Google sign-in links existing password user without creating duplicates', 
 
   const passwordLogin = await request(app).post('/api/auth/login').send({
     email,
-    password: 'pranav123',
-    workspaceSlug: 'pranav-sneha-accountability-circle',
+    password: 'changeme1',
+    workspaceSlug: 'my-accountability-circle',
   });
   assert.equal(passwordLogin.status, 200);
   } finally {
@@ -76,7 +76,7 @@ test('Google sign-in links existing password user without creating duplicates', 
 test('Google sign-in rejects linking when email already linked to different Google account', async () => {
   env.GOOGLE_CLIENT_ID = 'test-google-client-id';
 
-  const email = 'pranav.l1903@gmail.com';
+  const email = 'user1@example.com';
   const user = await prisma.user.findUnique({ where: { email }, select: { id: true, googleId: true } });
   assert.ok(user);
 
@@ -95,7 +95,7 @@ test('Google sign-in rejects linking when email already linked to different Goog
 
     const response = await request(app).post('/api/auth/google').send({
       idToken: 'fake-id-token',
-      workspaceSlug: 'pranav-sneha-accountability-circle',
+      workspaceSlug: 'my-accountability-circle',
     });
 
     assert.equal(response.status, 409);

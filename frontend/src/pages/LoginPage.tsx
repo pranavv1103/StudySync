@@ -11,8 +11,8 @@ export function LoginPage() {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const googleSignInAvailable = Boolean(googleClientId);
 
-  const [email, setEmail] = useState('pranav.l1903@gmail.com');
-  const [password, setPassword] = useState('pranav123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +28,7 @@ export function LoginPage() {
       const idToken = await requestGoogleIdToken(googleClientId);
       const response = await api.loginWithGoogle({
         idToken,
-        workspaceSlug: 'pranav-sneha-accountability-circle',
+        workspaceSlug: 'my-accountability-circle',
       });
       setAuth(response.token, response.user);
       navigate('/dashboard');
@@ -48,7 +48,7 @@ export function LoginPage() {
       const response = await api.login({
         email,
         password,
-        workspaceSlug: 'pranav-sneha-accountability-circle',
+        workspaceSlug: 'my-accountability-circle',
       });
 
       setAuth(response.token, response.user);

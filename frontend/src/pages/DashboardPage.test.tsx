@@ -34,7 +34,7 @@ describe('DashboardPage', () => {
       user: {
         id: 'user-1',
         name: 'Pranav',
-        email: 'pranav.l1903@gmail.com',
+        email: 'test@example.com',
         workspaceId: 'workspace-1',
       },
     });
@@ -48,7 +48,7 @@ describe('DashboardPage', () => {
       currentUserId: 'user-1',
       members: [
         {
-          user: { id: 'user-1', name: 'Pranav', email: 'pranav.l1903@gmail.com' },
+          user: { id: 'user-1', name: 'Pranav', email: 'test@example.com' },
           role: 'OWNER',
           summary: {
             userId: 'user-1',
@@ -75,7 +75,7 @@ describe('DashboardPage', () => {
           },
         },
         {
-          user: { id: 'user-2', name: 'Sneha', email: 'REMOVED' },
+          user: { id: 'user-2', name: 'Sneha', email: 'partner@example.com' },
           role: 'MEMBER',
           summary: {
             userId: 'user-2',

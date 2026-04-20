@@ -150,12 +150,18 @@ VITE_GOOGLE_CLIENT_ID=your-google-oauth-web-client-id
 
 ## Seeded Credentials
 
-- Pranav
-  - email: `pranav.l1903@gmail.com`
-  - password: `pranav123`
-- Accountability Buddy (Sneha)
-  - email: `REMOVED`
-  - password: `sneha123`
+Set these in your `.env` before running `prisma db seed`:
+
+```
+SEED_USER1_EMAIL=you@example.com
+SEED_USER1_PASSWORD=yourpassword
+SEED_USER2_EMAIL=partner@example.com
+SEED_USER2_PASSWORD=partnerpassword
+SEED_WORKSPACE_SLUG=my-accountability-circle
+SEED_WORKSPACE_NAME=My Accountability Circle
+```
+
+Defaults when env vars are not set: `user1@example.com` / `changeme1`, `user2@example.com` / `changeme2`.
 
 ## Scripts
 

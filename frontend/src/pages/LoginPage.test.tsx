@@ -24,7 +24,7 @@ describe('LoginPage', () => {
       user: {
         id: 'u1',
         name: 'Pranav',
-        email: 'pranav.l1903@gmail.com',
+        email: 'test@example.com',
         workspaceId: 'w1',
         workspaceRole: 'OWNER',
       },

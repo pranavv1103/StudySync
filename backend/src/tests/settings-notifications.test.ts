@@ -7,9 +7,9 @@ import { createDynamicGoalNotifications } from '../modules/notifications/notific
 
 async function loginAsPranav() {
   const response = await request(app).post('/api/auth/login').send({
-    email: 'pranav.l1903@gmail.com',
-    password: 'pranav123',
-    workspaceSlug: 'pranav-sneha-accountability-circle',
+    email: 'user1@example.com',
+    password: 'changeme1',
+    workspaceSlug: 'my-accountability-circle',
   });
 
   assert.equal(response.status, 200);
@@ -20,7 +20,7 @@ test('settings patch persists toggles and timezone via settings read', async () 
   const token = await loginAsPranav();
 
   const user = await prisma.user.findUnique({
-    where: { email: 'pranav.l1903@gmail.com' },
+    where: { email: 'user1@example.com' },
     select: { id: true, timezone: true },
   });
   assert.ok(user);
@@ -112,19 +112,19 @@ test('quiet hours and partner reminder preferences suppress/resume alerts', asyn
   const users = await prisma.user.findMany({
     where: {
       email: {
-        in: ['pranav.l1903@gmail.com', 'REMOVED'],
+        in: ['user1@example.com', 'user2@example.com'],
       },
     },
     select: { id: true, name: true, email: true, timezone: true },
   });
 
-  const pranav = users.find((user: { email: string }) => user.email === 'pranav.l1903@gmail.com');
-  const partner = users.find((user: { email: string }) => user.email === 'REMOVED');
+  const pranav = users.find((user: { email: string }) => user.email === 'user1@example.com');
+  const partner = users.find((user: { email: string }) => user.email === 'user2@example.com');
   assert.ok(pranav);
   assert.ok(partner);
 
   const workspace = await prisma.workspace.findUnique({
-    where: { slug: 'pranav-sneha-accountability-circle' },
+    where: { slug: 'my-accountability-circle' },
     select: { id: true },
   });
   assert.ok(workspace);
@@ -284,7 +284,7 @@ test('notifications read-all marks only selected audience as read', async () => 
   const token = await loginAsPranav();
 
   const user = await prisma.user.findUnique({
-    where: { email: 'pranav.l1903@gmail.com' },
+    where: { email: 'user1@example.com' },
     select: { id: true },
   });
   assert.ok(user);
@@ -292,7 +292,7 @@ test('notifications read-all marks only selected audience as read', async () => 
   const membership = await prisma.membership.findFirst({
     where: {
       userId: user.id,
-      workspace: { slug: 'pranav-sneha-accountability-circle' },
+      workspace: { slug: 'my-accountability-circle' },
     },
     select: { workspaceId: true },
   });

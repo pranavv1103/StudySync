@@ -12,7 +12,7 @@ type LoginResponse = {
 };
 
 const BASE_URL = process.env.STUDYSYNC_API_URL ?? 'http://localhost:4010/api';
-const WORKSPACE_SLUG = 'pranav-sneha-accountability-circle';
+const WORKSPACE_SLUG = process.env.SEED_WORKSPACE_SLUG ?? 'my-accountability-circle';
 const TODAY = new Date().toISOString().slice(0, 10);
 
 async function apiRequest<T>(
@@ -67,8 +67,8 @@ async function main() {
 
   const results: Record<string, unknown> = {};
 
-  const pranav = await login('pranav.l1903@gmail.com', 'pranav123');
-  const partner = await login('REMOVED', 'sneha123');
+  const pranav = await login(process.env.SEED_USER1_EMAIL ?? 'user1@example.com', process.env.SEED_USER1_PASSWORD ?? 'changeme1');
+  const partner = await login(process.env.SEED_USER2_EMAIL ?? 'user2@example.com', process.env.SEED_USER2_PASSWORD ?? 'changeme2');
 
   const pranavId = pranav.user.id;
   const partnerId = partner.user.id;
@@ -181,7 +181,7 @@ async function main() {
 
   try {
     // Case 1: Existing password user + Google linking simulation
-    const beforeCount = await prisma.user.count({ where: { email: 'pranav.l1903@gmail.com' } });
+    const beforeCount = await prisma.user.count({ where: { email: process.env.SEED_USER1_EMAIL ?? 'user1@example.com' } });
     const beforeMemberships = await prisma.membership.count({ where: { userId: pranavId } });
 
     const simulatedGoogleId = `sim-google-${Date.now()}`;
@@ -190,9 +190,9 @@ async function main() {
       data: { googleId: simulatedGoogleId },
     });
 
-    const passwordLoginAfterLink = await login('pranav.l1903@gmail.com', 'pranav123');
+    const passwordLoginAfterLink = await login(process.env.SEED_USER1_EMAIL ?? 'user1@example.com', process.env.SEED_USER1_PASSWORD ?? 'changeme1');
 
-    const afterCount = await prisma.user.count({ where: { email: 'pranav.l1903@gmail.com' } });
+    const afterCount = await prisma.user.count({ where: { email: process.env.SEED_USER1_EMAIL ?? 'user1@example.com' } });
     const afterMemberships = await prisma.membership.count({ where: { userId: pranavId } });
 
     results.googleLinking = {
